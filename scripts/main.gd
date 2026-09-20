@@ -48,7 +48,7 @@ func _build_world() -> void:
     var env := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = BG
+    environment.background_color = Color("#17271e")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color("#9ab8a2")
     environment.ambient_light_energy = 0.62
@@ -58,7 +58,7 @@ func _build_world() -> void:
     environment.glow_bloom = 0.12
     environment.fog_enabled = true
     environment.fog_light_color = Color("#789789")
-    environment.fog_density = 0.006
+    environment.fog_density = 0.0032
     environment.fog_sky_affect = 0.45
     env.environment = environment
     world_root.add_child(env)
@@ -71,10 +71,10 @@ func _build_world() -> void:
     world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(8.2, 5.2, 13.8)
-    camera.fov = 45.0
+    camera.position = Vector3(7.0, 4.3, 11.5)
+    camera.fov = 48.0
     world_root.add_child(camera)
-    camera.look_at(Vector3(0, 1.7, -10), Vector3.UP)
+    camera.look_at(Vector3(0.4, 1.0, -7.2), Vector3.UP)
 
     _index_nature_assets()
     _create_ground()
@@ -559,7 +559,7 @@ func _create_savia_hero() -> void:
         var stem_mesh := CylinderMesh.new()
         stem_mesh.top_radius = 0.07
         stem_mesh.bottom_radius = 0.12
-        stem_mesh.height = 2.25
+        stem_mesh.height = 2.05
         stem.mesh = stem_mesh
         stem.position = Vector3(1.2, 1.1, -5.2)
         stem.material_override = _mat(Color("#6f9d58"), 0.72)
@@ -567,10 +567,10 @@ func _create_savia_hero() -> void:
         for i in range(7):
             var leaf := MeshInstance3D.new()
             var leaf_mesh := QuadMesh.new()
-            leaf_mesh.size = Vector2(0.72, 0.38)
+            leaf_mesh.size = Vector2(0.62, 0.32)
             leaf.mesh = leaf_mesh
             leaf.position = Vector3(1.2 + sin(i * 0.9) * 0.45, 0.72 + i * 0.23, -5.2 + cos(i * 0.8) * 0.22)
-            leaf.rotation_degrees = Vector3(-8 + i * 2, -18 + i * 26, -28 + i * 9)
+            leaf.rotation_degrees = Vector3(-12 + i * 3, -24 + i * 28, -22 + i * 7)
             leaf.material_override = _glow_mat(Color("#7fbe69"), Color("#72d66f"), 1.15, 0.76)
             world_root.add_child(leaf)
 
@@ -583,27 +583,27 @@ func _create_savia_hero() -> void:
     world_root.add_child(plant_light)
 
 func _create_light_beam() -> void:
-    # Scientific "beam" rather than cyberpunk neon: a moving luminous path
-    # that traces the same ecosystem from atmosphere to roots.
-    for i in range(7):
+    # A soft volumetric-looking ray: one broad translucent shaft plus small
+    # motes. It should feel like sunlight revealing biological activity.
+    for i in range(3):
         var beam := MeshInstance3D.new()
         var mesh := QuadMesh.new()
-        mesh.size = Vector2(0.18 + i * 0.035, 8.0)
+        mesh.size = Vector2(2.2 - i * 0.45, 9.0)
         beam.mesh = mesh
-        beam.position = Vector3(-1.8 + i * 0.55, 3.9, -8.5 - i * 0.55)
-        beam.rotation_degrees = Vector3(0, -12 + i * 2.0, -6 + i * 1.2)
-        beam.material_override = _glow_mat(Color(0.72, 1.0, 0.48, 0.13), Color("#d7ff9b"), 2.8, 0.14)
+        beam.position = Vector3(-1.0 + i * 0.8, 4.5, -8.2 - i * 0.45)
+        beam.rotation_degrees = Vector3(-8, -16 + i * 3.0, -14 + i * 4.0)
+        beam.material_override = _glow_mat(Color(0.78, 1.0, 0.55, 0.055), Color("#d7ff9b"), 1.2, 0.055)
         world_root.add_child(beam)
         light_particles.append(beam)
 
-    for i in range(18):
+    for i in range(24):
         var particle := MeshInstance3D.new()
         var sphere := SphereMesh.new()
-        sphere.radius = 0.025 + float(i % 3) * 0.012
+        sphere.radius = 0.018 + float(i % 3) * 0.009
         sphere.height = sphere.radius * 2.0
         particle.mesh = sphere
-        particle.position = Vector3(-2.0 + float(i % 6) * 0.65, 1.0 + float((i * 7) % 25) * 0.12, -5.0 - float((i * 11) % 20) * 0.35)
-        particle.material_override = _glow_mat(Color("#b8ef78"), Color("#d9ff9c"), 3.0, 0.92)
+        particle.position = Vector3(-3.0 + float((i * 13) % 42) * 0.15, 0.7 + float((i * 7) % 27) * 0.14, -4.5 - float((i * 11) % 25) * 0.28)
+        particle.material_override = _glow_mat(Color("#b8ef78"), Color("#d9ff9c"), 2.2, 0.82)
         world_root.add_child(particle)
         light_particles.append(particle)
 
@@ -771,8 +771,8 @@ func _build_interface() -> void:
 
     # NORA appears as an observation note, not as a chatbot.
     var nora := PanelContainer.new()
-    nora.position = Vector2(890, 42)
-    nora.size = Vector2(330, 116)
+    nora.position = Vector2(820, 42)
+    nora.size = Vector2(355, 116)
     nora.add_theme_stylebox_override("panel", _box(Color(0.01, 0.035, 0.022, 0.70), 16, Color(0.38, 0.62, 0.42, 0.45), 1))
     menu_root.add_child(nora)
 
@@ -787,14 +787,14 @@ func _build_interface() -> void:
     nora_box.add_child(nora_name)
 
     var nora_msg := Label.new()
-    nora_msg.text = "La señal recorre la planta.\\nHay actividad bajo la hojarasca.\\nTodavía no sé qué significa."
+    nora_msg.text = "La señal recorre la planta.\nHay actividad bajo la hojarasca.\nTodavía no sé qué significa."
     nora_msg.add_theme_font_size_override("font_size", 13)
     nora_msg.add_theme_color_override("font_color", TEXT)
     nora_box.add_child(nora_msg)
 
     # Scale rail: the same living world, from leaf to microbial life.
     var rail := VBoxContainer.new()
-    rail.position = Vector2(1135, 270)
+    rail.position = Vector2(1110, 275)
     rail.custom_minimum_size = Vector2(105, 300)
     rail.add_theme_constant_override("separation", 12)
     menu_root.add_child(rail)
