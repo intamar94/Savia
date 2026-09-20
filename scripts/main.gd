@@ -14,6 +14,8 @@ var fireflies: Array[Node3D] = []
 var grass_blades: Array[Node3D] = []
 var wildlife: Array[Node3D] = []
 var birds: Array[Node3D] = []
+var nature_asset_cache: Dictionary = {}
+var nature_asset_files: Array[String] = []
 
 const BG := Color("#07110d")
 const GLASS := Color(0.025, 0.065, 0.045, 0.72)
@@ -71,6 +73,7 @@ func _build_world() -> void:
     world_root.add_child(camera)
     camera.look_at(Vector3(0, 1.7, -10), Vector3.UP)
 
+    _index_nature_assets()
     _create_ground()
     _create_water()
     _create_distant_forest()
@@ -82,6 +85,63 @@ func _build_world() -> void:
     _create_wildlife()
     _create_birds()
 
+func _index_nature_assets() -> void:
+    nature_asset_files.clear()
+    var root := "res://assets/vendor/quaternius/stylized_nature_megakit"
+    _scan_asset_directory(root)
+
+func _scan_asset_directory(path: String) -> void:
+    var dir := DirAccess.open(path)
+    if not dir:
+        return
+    for file_name in dir.get_files():
+        var lower := file_name.to_lower()
+        if lower.ends_with(".gltf") or lower.ends_with(".glb"):
+            nature_asset_files.append(path.path_join(file_name))
+    for dir_name in dir.get_directories():
+        _scan_asset_directory(path.path_join(dir_name))
+
+func _get_nature_asset(candidates: Array[String]) -> PackedScene:
+    var key := "|".join(candidates)
+    if nature_asset_cache.has(key):
+        return nature_asset_cache[key]
+
+    # First try exact filenames so common assets load immediately.
+    for candidate in candidates:
+        for path in [
+            "res://assets/vendor/quaternius/stylized_nature_megakit/" + candidate,
+            "res://assets/vendor/quaternius/stylized_nature_megakit/glTF/" + candidate
+        ]:
+            if ResourceLoader.exists(path):
+                var exact := load(path) as PackedScene
+                if exact:
+                    nature_asset_cache[key] = exact
+                    return exact
+
+    # Then search the installed pack, making the integration resilient to
+    # future changes in its folder layout.
+    for path in nature_asset_files:
+        var filename := path.get_file().to_lower()
+        for candidate in candidates:
+            if filename == candidate.to_lower():
+                var found := load(path) as PackedScene
+                if found:
+                    nature_asset_cache[key] = found
+                    return found
+
+    nature_asset_cache[key] = null
+    return null
+
+func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: float) -> Node3D:
+    var scene := _get_nature_asset(candidates)
+    if not scene:
+        return null
+    var node := scene.instantiate()
+    node.position = pos
+    node.scale = Vector3.ONE * scale_factor
+    world_root.add_child(node)
+    return node
+
 func _create_ground() -> void:
     var ground := MeshInstance3D.new()
     var mesh := PlaneMesh.new()
@@ -92,6 +152,9 @@ func _create_ground() -> void:
     world_root.add_child(ground)
 
     for i in range(18):
+        var rock_asset := _add_nature_asset(["Pebble_Square_6.gltf", "Rock_"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
+        if rock_asset:
+            continue
         var rock := MeshInstance3D.new()
         var sphere := SphereMesh.new()
         sphere.radius = 0.25 + float(i % 4) * 0.12
@@ -141,6 +204,23 @@ func _create_foreground_forest() -> void:
         _create_tree(Vector3(x, 0, z), 0.82 + float(i % 4) * 0.12, false)
 
 func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
+    # Prefer real Quaternius vegetation. Procedural geometry remains only as a
+    # safe fallback when the external pack has not been installed yet.
+    var candidates := [
+        "CommonTree_3.gltf",
+        "CommonTree_5.gltf",
+        "CommonTree_1.gltf",
+        "CommonTree_2.gltf",
+        "Pine_2.gltf"
+    ]
+    var scene := _get_nature_asset(candidates)
+    if scene:
+        var tree := scene.instantiate()
+        tree.position = pos
+        tree.scale = Vector3.ONE * scale_factor * (0.95 if not distant else 0.78)
+        world_root.add_child(tree)
+        return
+
     var tree := Node3D.new()
     tree.position = pos
     tree.scale = Vector3.ONE * scale_factor
@@ -270,6 +350,9 @@ func _create_mushroom_cluster() -> void:
 
 func _create_fern_beds() -> void:
     for i in range(18):
+        var real_plant := _add_nature_asset(["Plant_7_Big.gltf", "Grass_Common_Short.gltf", "Bush_Common_Flowers.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
+        if real_plant:
+            continue
         var fern := Node3D.new()
         fern.position = Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22))
         world_root.add_child(fern)
