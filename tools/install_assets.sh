@@ -33,7 +33,7 @@ if [ ! -d "$QUAT_DIR" ] || [ -z "$(find "$QUAT_DIR" -type f -print -quit 2>/dev/
 
   git config --global --add safe.directory "$MIRROR_DIR" 2>/dev/null || true
   git -C "$MIRROR_DIR" config --local --add safe.directory "$MIRROR_DIR" 2>/dev/null || true
-  git -C "$MIRROR_DIR" sparse-checkout set 'Stylized Nature MegaKit[Standard]'
+  git -C "$MIRROR_DIR" sparse-checkout set --skip-checks 'Stylized Nature MegaKit[Standard]'
 
   SRC="$MIRROR_DIR/Stylized Nature MegaKit[Standard]"
   if [ ! -d "$SRC" ]; then
