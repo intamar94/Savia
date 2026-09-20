@@ -108,6 +108,27 @@ func _scan_asset_directory(path: String) -> void:
     for dir_name in dir.get_directories():
         _scan_asset_directory(path.path_join(dir_name))
 
+func _load_gltf_asset(candidates: Array[String]) -> Node3D:
+    # Runtime GLTF loading bypasses assumptions about Godot's imported
+    # PackedScene representation. This is used only for the external asset
+    # pack and keeps the game independent from editor import state.
+    for path in nature_asset_files:
+        var filename := path.get_file().to_lower()
+        for candidate in candidates:
+            if filename == candidate.get_file().to_lower():
+                var document := GLTFDocument.new()
+                var state := GLTFState.new()
+                var err := document.append_from_file(path, state)
+                if err != OK:
+                    print("SAVIA GLTF ERROR: ", err, " -> ", path)
+                    continue
+                var scene := document.generate_scene(state)
+                if scene:
+                    print("SAVIA GLTF OK: ", path)
+                    return scene
+                print("SAVIA GLTF GENERATE FAILED: ", path)
+    return null
+
 func _get_nature_asset(candidates: Array[String]) -> PackedScene:
     var key := "|".join(candidates)
     if nature_asset_cache.has(key):
@@ -166,9 +187,14 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
 
 func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: float) -> Node3D:
     var scene := _get_nature_asset(candidates)
-    if not scene:
+    var node: Node3D = null
+    if scene:
+        node = scene.instantiate()
+    else:
+        node = _load_gltf_asset(candidates)
+
+    if not node:
         return null
-    var node := scene.instantiate()
     node.position = pos
     node.scale = Vector3.ONE * scale_factor
     world_root.add_child(node)
@@ -248,12 +274,8 @@ func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
         "CommonTree_2.gltf",
         "Pine_2.gltf"
     ]
-    var scene := _get_nature_asset(candidates)
-    if scene:
-        var tree := scene.instantiate()
-        tree.position = pos
-        tree.scale = Vector3.ONE * scale_factor * (0.95 if not distant else 0.78)
-        world_root.add_child(tree)
+    var real_tree := _add_nature_asset(candidates, pos, scale_factor * (0.95 if not distant else 0.78))
+    if real_tree:
         return
 
     var tree := Node3D.new()
