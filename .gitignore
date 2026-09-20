@@ -1,0 +1,10 @@
+# SAVIA external/vendor assets
+assets/vendor/*
+!assets/vendor/.gitkeep
+.asset_cache/
+
+# Godot generated/imported data
+.godot/
+.import/
+export.cfg
+export_presets.cfg
