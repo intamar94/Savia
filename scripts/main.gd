@@ -77,6 +77,7 @@ func _build_world() -> void:
     camera.look_at(Vector3(0.4, 1.0, -7.2), Vector3.UP)
 
     _index_nature_assets()
+    _test_nature_asset_pipeline()
     _create_ground()
     _create_water()
     _create_distant_forest()
@@ -113,27 +114,26 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
     if nature_asset_cache.has(key):
         return nature_asset_cache[key]
 
-    # First try exact filenames so common assets load immediately.
-    for candidate in candidates:
-        for path in [
-            "res://assets/vendor/quaternius/stylized_nature_megakit/" + candidate,
-            "res://assets/vendor/quaternius/stylized_nature_megakit/glTF/" + candidate
-        ]:
-            if ResourceLoader.exists(path):
-                var exact := load(path) as PackedScene
-                if exact:
+    # Search the complete imported asset tree. We do not assume that the
+    # package has one fixed folder layout.
+    for path in nature_asset_files:
+        var filename := path.get_file().to_lower()
+        for candidate in candidates:
+            var wanted := candidate.get_file().to_lower()
+            if filename == wanted:
+                var exact := ResourceLoader.load(path, "PackedScene")
+                if exact is PackedScene:
                     nature_asset_cache[key] = exact
                     return exact
+                print("SAVIA asset load failed: ", path, " type=", typeof(exact))
 
-    # Then search by semantic filename tokens. The free pack can change
-    # capitalization/folder layout between releases, so SAVIA should not
-    # depend on one exact filename.
+    # Semantic fallback for variants such as CommonTree_1 / CommonTree_2.
     var tokens: Array[String] = []
     for candidate in candidates:
         var stem := candidate.get_file().get_basename().to_lower()
         if stem.begins_with("commontree"):
             tokens.append("commontree")
-        elif stem.begins_with("dead"):
+        elif stem.begins_with("deadtree"):
             tokens.append("deadtree")
         elif stem.begins_with("plant"):
             tokens.append("plant")
@@ -143,6 +143,10 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
             tokens.append("bush")
         elif stem.begins_with("fern"):
             tokens.append("fern")
+        elif stem.begins_with("flower"):
+            tokens.append("flower")
+        elif stem.begins_with("mushroom"):
+            tokens.append("mushroom")
         elif stem.begins_with("rock") or stem.begins_with("pebble"):
             tokens.append("rock")
             tokens.append("pebble")
@@ -151,13 +155,46 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
         var filename := path.get_file().to_lower()
         for token in tokens:
             if token in filename:
-                var found := load(path) as PackedScene
-                if found:
+                var found := ResourceLoader.load(path, "PackedScene")
+                if found is PackedScene:
                     nature_asset_cache[key] = found
                     return found
+                print("SAVIA semantic asset load failed: ", path, " type=", typeof(found))
 
+    print("SAVIA asset not found for candidates: ", candidates)
     nature_asset_cache[key] = null
     return null
+
+func _test_nature_asset_pipeline() -> void:
+    var tree_path := ""
+    var plant_path := ""
+    var rock_path := ""
+    for path in nature_asset_files:
+        var filename := path.get_file().to_lower()
+        if tree_path == "" and ("commontree" in filename or "normaltree" in filename) and filename.ends_with(".gltf"):
+            tree_path = path
+        elif plant_path == "" and ("fern" in filename or "flower" in filename or "plant" in filename) and filename.ends_with(".gltf"):
+            plant_path = path
+        elif rock_path == "" and ("rock" in filename or "pebble" in filename) and filename.ends_with(".gltf"):
+            rock_path = path
+
+    print("SAVIA ASSET PIPELINE: models=", nature_asset_files.size())
+    print("SAVIA TEST TREE: ", tree_path)
+    print("SAVIA TEST PLANT: ", plant_path)
+    print("SAVIA TEST ROCK: ", rock_path)
+
+    # Put one real asset in the world as a guaranteed visual test.
+    if tree_path != "":
+        var scene := ResourceLoader.load(tree_path, "PackedScene")
+        if scene is PackedScene:
+            var test_tree := scene.instantiate()
+            test_tree.name = "REAL_ASSET_TEST_TREE"
+            test_tree.position = Vector3(-0.5, 0.0, -6.0)
+            test_tree.scale = Vector3.ONE * 1.35
+            world_root.add_child(test_tree)
+            print("SAVIA REAL TREE OK: ", tree_path)
+        else:
+            print("SAVIA REAL TREE FAILED: ", tree_path, " loaded_type=", typeof(scene))
 
 func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: float) -> Node3D:
     var scene := _get_nature_asset(candidates)
@@ -179,7 +216,7 @@ func _create_ground() -> void:
     world_root.add_child(ground)
 
     for i in range(18):
-        var rock_asset := _add_nature_asset(["Rock_1.gltf", "Rock_2.gltf", "Pebble_1.gltf"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
+        var rock_asset := _add_nature_asset(["Rock_1.gltf", "Rock_2.gltf", "Rock_Medium_2.gltf", "Pebble_1.gltf"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
         if rock_asset:
             continue
         var rock := MeshInstance3D.new()
@@ -236,6 +273,8 @@ func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
     var candidates := [
         "CommonTree_4.gltf",
         "CommonTree_3.gltf",
+        "NormalTree_1.gltf",
+        "NormalTree_2.gltf",
         "CommonTree_5.gltf",
         "CommonTree_1.gltf",
         "CommonTree_2.gltf",
@@ -378,7 +417,7 @@ func _create_mushroom_cluster() -> void:
 
 func _create_fern_beds() -> void:
     for i in range(18):
-        var real_plant := _add_nature_asset(["Fern_1.gltf", "Plant_7.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
+        var real_plant := _add_nature_asset(["Fern_1.gltf", "Flower_3_Single.gltf", "Plant_7.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
         if real_plant:
             continue
         var fern := Node3D.new()
