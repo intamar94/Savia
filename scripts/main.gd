@@ -118,12 +118,32 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
                     nature_asset_cache[key] = exact
                     return exact
 
-    # Then search the installed pack, making the integration resilient to
-    # future changes in its folder layout.
+    # Then search by semantic filename tokens. The free pack can change
+    # capitalization/folder layout between releases, so SAVIA should not
+    # depend on one exact filename.
+    var tokens: Array[String] = []
+    for candidate in candidates:
+        var stem := candidate.get_file().get_basename().to_lower()
+        if stem.begins_with("commontree"):
+            tokens.append("commontree")
+        elif stem.begins_with("dead"):
+            tokens.append("deadtree")
+        elif stem.begins_with("plant"):
+            tokens.append("plant")
+        elif stem.begins_with("grass"):
+            tokens.append("grass")
+        elif stem.begins_with("bush"):
+            tokens.append("bush")
+        elif stem.begins_with("fern"):
+            tokens.append("fern")
+        elif stem.begins_with("rock") or stem.begins_with("pebble"):
+            tokens.append("rock")
+            tokens.append("pebble")
+
     for path in nature_asset_files:
         var filename := path.get_file().to_lower()
-        for candidate in candidates:
-            if filename == candidate.to_lower():
+        for token in tokens:
+            if token in filename:
                 var found := load(path) as PackedScene
                 if found:
                     nature_asset_cache[key] = found
@@ -152,7 +172,7 @@ func _create_ground() -> void:
     world_root.add_child(ground)
 
     for i in range(18):
-        var rock_asset := _add_nature_asset(["Pebble_Square_6.gltf", "Rock_"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
+        var rock_asset := _add_nature_asset(["Rock_1.gltf", "Rock_2.gltf", "Pebble_1.gltf"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
         if rock_asset:
             continue
         var rock := MeshInstance3D.new()
@@ -350,7 +370,7 @@ func _create_mushroom_cluster() -> void:
 
 func _create_fern_beds() -> void:
     for i in range(18):
-        var real_plant := _add_nature_asset(["Plant_7_Big.gltf", "Grass_Common_Short.gltf", "Bush_Common_Flowers.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
+        var real_plant := _add_nature_asset(["Fern_1.gltf", "Plant_7.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
         if real_plant:
             continue
         var fern := Node3D.new()
