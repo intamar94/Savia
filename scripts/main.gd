@@ -12,6 +12,8 @@ var time := 0.0
 var menu_open := true
 var fireflies: Array[Node3D] = []
 var grass_blades: Array[Node3D] = []
+var wildlife: Array[Node3D] = []
+var birds: Array[Node3D] = []
 
 const BG := Color("#07110d")
 const GLASS := Color(0.025, 0.065, 0.045, 0.72)
@@ -51,14 +53,15 @@ func _build_world() -> void:
     environment.glow_bloom = 0.12
     environment.fog_enabled = true
     environment.fog_light_color = Color("#789789")
-    environment.fog_density = 0.012
+    environment.fog_density = 0.006
+    environment.fog_sky_affect = 0.45
     env.environment = environment
     world_root.add_child(env)
 
     var moon := DirectionalLight3D.new()
-    moon.rotation_degrees = Vector3(-38, -28, 0)
-    moon.light_energy = 1.0
-    moon.light_color = Color("#c9dfcf")
+    moon.rotation_degrees = Vector3(-42, -32, 0)
+    moon.light_energy = 1.35
+    moon.light_color = Color("#dce9d0")
     moon.shadow_enabled = true
     world_root.add_child(moon)
 
@@ -76,6 +79,8 @@ func _build_world() -> void:
     _create_fireflies()
     _create_mushroom_cluster()
     _create_fern_beds()
+    _create_wildlife()
+    _create_birds()
 
 func _create_ground() -> void:
     var ground := MeshInstance3D.new()
@@ -279,6 +284,160 @@ func _create_fern_beds() -> void:
             fern.add_child(leaf)
             grass_blades.append(leaf)
 
+func _create_wildlife() -> void:
+    # Small groups of real forest fauna give the scene a living food web.
+    _create_deer(Vector3(8.0, 0, -13.0), 0.9)
+    _create_deer(Vector3(10.0, 0, -15.5), 0.62)
+    _create_rabbit(Vector3(-6.0, 0, -7.0), 0.7)
+    _create_rabbit(Vector3(-7.2, 0, -8.0), 0.55)
+    _create_beetle(Vector3(0.5, 0.04, -4.5), 0.45)
+    _create_beetle(Vector3(1.1, 0.04, -4.9), 0.3)
+    _create_butterfly(Vector3(-2.5, 1.4, -5.5), 0.7)
+    _create_butterfly(Vector3(-1.4, 1.8, -8.5), 0.5)
+
+func _create_deer(pos: Vector3, s: float) -> void:
+    var deer := Node3D.new()
+    deer.position = pos
+    deer.scale = Vector3.ONE * s
+    world_root.add_child(deer)
+    wildlife.append(deer)
+
+    var body := MeshInstance3D.new()
+    var body_mesh := SphereMesh.new()
+    body_mesh.radius = 0.62
+    body_mesh.height = 1.1
+    body.mesh = body_mesh
+    body.position.y = 1.05
+    body.scale = Vector3(1.55, 0.9, 0.72)
+    body.material_override = _mat(Color("#72563e"), 0.95)
+    deer.add_child(body)
+
+    var neck := MeshInstance3D.new()
+    var neck_mesh := CylinderMesh.new()
+    neck_mesh.top_radius = 0.18
+    neck_mesh.bottom_radius = 0.28
+    neck_mesh.height = 0.85
+    neck.mesh = neck_mesh
+    neck.position = Vector3(0.38, 1.48, 0)
+    neck.rotation_degrees.z = -18
+    neck.material_override = _mat(Color("#795d43"), 0.95)
+    deer.add_child(neck)
+
+    var head := MeshInstance3D.new()
+    var head_mesh := SphereMesh.new()
+    head_mesh.radius = 0.3
+    head_mesh.height = 0.52
+    head.mesh = head_mesh
+    head.position = Vector3(0.68, 1.86, 0)
+    head.scale = Vector3(1.2, 0.9, 0.9)
+    head.material_override = _mat(Color("#72543b"), 0.95)
+    deer.add_child(head)
+
+    for x in [-0.38, 0.34]:
+        for z in [-0.27, 0.27]:
+            var leg := MeshInstance3D.new()
+            var leg_mesh := CylinderMesh.new()
+            leg_mesh.top_radius = 0.055
+            leg_mesh.bottom_radius = 0.075
+            leg_mesh.height = 0.92
+            leg.mesh = leg_mesh
+            leg.position = Vector3(x, 0.47, z)
+            leg.material_override = _mat(Color("#5d4533"), 0.95)
+            deer.add_child(leg)
+
+func _create_rabbit(pos: Vector3, s: float) -> void:
+    var rabbit := Node3D.new()
+    rabbit.position = pos
+    rabbit.scale = Vector3.ONE * s
+    world_root.add_child(rabbit)
+    wildlife.append(rabbit)
+
+    var body := MeshInstance3D.new()
+    var mesh := SphereMesh.new()
+    mesh.radius = 0.34
+    mesh.height = 0.55
+    body.mesh = mesh
+    body.position.y = 0.32
+    body.scale = Vector3(1.35, 0.8, 0.9)
+    body.material_override = _mat(Color("#9a917c"), 0.98)
+    rabbit.add_child(body)
+
+    var head := MeshInstance3D.new()
+    var head_mesh := SphereMesh.new()
+    head_mesh.radius = 0.22
+    head_mesh.height = 0.4
+    head.mesh = head_mesh
+    head.position = Vector3(0.3, 0.52, 0)
+    head.material_override = _mat(Color("#a39a85"), 0.98)
+    rabbit.add_child(head)
+
+    for z in [-0.09, 0.09]:
+        var ear := MeshInstance3D.new()
+        var ear_mesh := CapsuleMesh.new()
+        ear_mesh.radius = 0.055
+        ear_mesh.height = 0.42
+        ear.mesh = ear_mesh
+        ear.position = Vector3(0.28, 0.82, z)
+        ear.rotation_degrees.z = -8
+        ear.material_override = _mat(Color("#8e866f"), 0.98)
+        rabbit.add_child(ear)
+
+func _create_beetle(pos: Vector3, s: float) -> void:
+    var beetle := MeshInstance3D.new()
+    var mesh := SphereMesh.new()
+    mesh.radius = 0.12
+    mesh.height = 0.18
+    beetle.mesh = mesh
+    beetle.position = pos
+    beetle.scale = Vector3(1.5, 0.55, 1.0) * s
+    beetle.material_override = _mat(Color("#202922"), 0.8)
+    world_root.add_child(beetle)
+    wildlife.append(beetle)
+
+func _create_butterfly(pos: Vector3, s: float) -> void:
+    var butterfly := Node3D.new()
+    butterfly.position = pos
+    butterfly.scale = Vector3.ONE * s
+    world_root.add_child(butterfly)
+    wildlife.append(butterfly)
+
+    var body := MeshInstance3D.new()
+    var body_mesh := CylinderMesh.new()
+    body_mesh.top_radius = 0.025
+    body_mesh.bottom_radius = 0.035
+    body_mesh.height = 0.22
+    body.mesh = body_mesh
+    body.rotation_degrees.z = 90
+    body.material_override = _mat(Color("#40352c"), 0.9)
+    butterfly.add_child(body)
+
+    for side in [-1.0, 1.0]:
+        var wing := MeshInstance3D.new()
+        var wing_mesh := QuadMesh.new()
+        wing_mesh.size = Vector2(0.28, 0.18)
+        wing.mesh = wing_mesh
+        wing.position = Vector3(0, 0.0, side * 0.12)
+        wing.rotation_degrees.y = 18 * side
+        wing.material_override = _mat(Color("#b48a61"), 0.75)
+        butterfly.add_child(wing)
+
+func _create_birds() -> void:
+    for i in range(5):
+        var bird := Node3D.new()
+        bird.position = Vector3(-11 + i * 5.0, 5.5 + (i % 2) * 1.3, -16 - (i % 3) * 3)
+        world_root.add_child(bird)
+        birds.append(bird)
+
+        for side in [-1.0, 1.0]:
+            var wing := MeshInstance3D.new()
+            var mesh := QuadMesh.new()
+            mesh.size = Vector2(0.7, 0.16)
+            wing.mesh = mesh
+            wing.position = Vector3(0, 0, side * 0.28)
+            wing.rotation_degrees = Vector3(0, 0, side * 12)
+            wing.material_override = _mat(Color("#202c25"), 0.95)
+            bird.add_child(wing)
+
 func _animate_world() -> void:
     if camera:
         var target := Vector3(0.0 + sin(time * 0.045) * 1.4, 1.7 + sin(time * 0.17) * 0.08, -10.0)
@@ -292,6 +451,19 @@ func _animate_world() -> void:
         f.position = base + Vector3(sin(time * (0.5 + i * 0.01) + i) * 0.012, sin(time * 1.3 + i) * 0.018, cos(time * 0.6 + i) * 0.012)
         var glow := 0.35 + 0.35 * sin(time * 1.8 + i)
         f.scale = Vector3.ONE * (0.8 + glow)
+
+    for i in range(wildlife.size()):
+        var animal := wildlife[i]
+        animal.position.y += sin(time * (0.8 + i * 0.03) + i) * 0.0007
+        if i % 4 == 0:
+            animal.rotation.y = sin(time * 0.12 + i) * 0.05
+
+    for i in range(birds.size()):
+        var bird := birds[i]
+        bird.position.x += 0.004 + i * 0.0004
+        bird.position.y += sin(time * 0.8 + i) * 0.002
+        if bird.position.x > 16.0:
+            bird.position.x = -16.0
 
     for i in range(grass_blades.size()):
         grass_blades[i].rotation_degrees.z += sin(time * 0.6 + i) * 0.002
