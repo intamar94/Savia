@@ -14,6 +14,9 @@ var fireflies: Array[Node3D] = []
 var grass_blades: Array[Node3D] = []
 var wildlife: Array[Node3D] = []
 var birds: Array[Node3D] = []
+var light_particles: Array[Node3D] = []
+var leaf_particles: Array[Node3D] = []
+var root_nodes: Array[Node3D] = []
 var nature_asset_cache: Dictionary = {}
 var nature_asset_files: Array[String] = []
 
@@ -84,6 +87,10 @@ func _build_world() -> void:
     _create_fern_beds()
     _create_wildlife()
     _create_birds()
+    _create_savia_hero()
+    _create_light_beam()
+    _create_root_network()
+    _create_leaf_particles()
 
 func _index_nature_assets() -> void:
     nature_asset_files.clear()
@@ -227,6 +234,7 @@ func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
     # Prefer real Quaternius vegetation. Procedural geometry remains only as a
     # safe fallback when the external pack has not been installed yet.
     var candidates := [
+        "CommonTree_4.gltf",
         "CommonTree_3.gltf",
         "CommonTree_5.gltf",
         "CommonTree_1.gltf",
@@ -541,6 +549,129 @@ func _create_birds() -> void:
             wing.material_override = _mat(Color("#202c25"), 0.95)
             bird.add_child(wing)
 
+
+func _create_savia_hero() -> void:
+    # Hero plant: a real pack asset when available, with a subtle luminous
+    # scientific treatment that visually connects leaf -> stem -> soil.
+    var hero := _add_nature_asset(["Plant_7.gltf", "Plant_6.gltf", "Fern_1.gltf", "Bush_Common.gltf"], Vector3(1.2, -0.05, -5.2), 1.55)
+    if not hero:
+        var stem := MeshInstance3D.new()
+        var stem_mesh := CylinderMesh.new()
+        stem_mesh.top_radius = 0.07
+        stem_mesh.bottom_radius = 0.12
+        stem_mesh.height = 2.25
+        stem.mesh = stem_mesh
+        stem.position = Vector3(1.2, 1.1, -5.2)
+        stem.material_override = _mat(Color("#6f9d58"), 0.72)
+        world_root.add_child(stem)
+        for i in range(7):
+            var leaf := MeshInstance3D.new()
+            var leaf_mesh := QuadMesh.new()
+            leaf_mesh.size = Vector2(0.72, 0.38)
+            leaf.mesh = leaf_mesh
+            leaf.position = Vector3(1.2 + sin(i * 0.9) * 0.45, 0.72 + i * 0.23, -5.2 + cos(i * 0.8) * 0.22)
+            leaf.rotation_degrees = Vector3(-8 + i * 2, -18 + i * 26, -28 + i * 9)
+            leaf.material_override = _glow_mat(Color("#7fbe69"), Color("#72d66f"), 1.15, 0.76)
+            world_root.add_child(leaf)
+
+    # A small warm source at the plant makes the biological path readable.
+    var plant_light := OmniLight3D.new()
+    plant_light.position = Vector3(1.2, 1.15, -5.2)
+    plant_light.light_color = Color("#c8ff9a")
+    plant_light.light_energy = 1.4
+    plant_light.omni_range = 4.0
+    world_root.add_child(plant_light)
+
+func _create_light_beam() -> void:
+    # Scientific "beam" rather than cyberpunk neon: a moving luminous path
+    # that traces the same ecosystem from atmosphere to roots.
+    for i in range(7):
+        var beam := MeshInstance3D.new()
+        var mesh := QuadMesh.new()
+        mesh.size = Vector2(0.18 + i * 0.035, 8.0)
+        beam.mesh = mesh
+        beam.position = Vector3(-1.8 + i * 0.55, 3.9, -8.5 - i * 0.55)
+        beam.rotation_degrees = Vector3(0, -12 + i * 2.0, -6 + i * 1.2)
+        beam.material_override = _glow_mat(Color(0.72, 1.0, 0.48, 0.13), Color("#d7ff9b"), 2.8, 0.14)
+        world_root.add_child(beam)
+        light_particles.append(beam)
+
+    for i in range(18):
+        var particle := MeshInstance3D.new()
+        var sphere := SphereMesh.new()
+        sphere.radius = 0.025 + float(i % 3) * 0.012
+        sphere.height = sphere.radius * 2.0
+        particle.mesh = sphere
+        particle.position = Vector3(-2.0 + float(i % 6) * 0.65, 1.0 + float((i * 7) % 25) * 0.12, -5.0 - float((i * 11) % 20) * 0.35)
+        particle.material_override = _glow_mat(Color("#b8ef78"), Color("#d9ff9c"), 3.0, 0.92)
+        world_root.add_child(particle)
+        light_particles.append(particle)
+
+func _create_root_network() -> void:
+    # Visible underground layer: branching luminous roots and mycorrhizal
+    # threads. It is an interpretive scientific visualization, not a new
+    # biological rule.
+    var points := [
+        [Vector3(1.2, -0.02, -5.2), Vector3(0.7, -0.38, -5.8)],
+        [Vector3(0.7, -0.38, -5.8), Vector3(-0.2, -0.55, -6.8)],
+        [Vector3(-0.2, -0.55, -6.8), Vector3(-1.8, -0.64, -7.3)],
+        [Vector3(0.7, -0.38, -5.8), Vector3(1.7, -0.66, -6.7)],
+        [Vector3(1.7, -0.66, -6.7), Vector3(3.4, -0.73, -7.0)],
+        [Vector3(1.7, -0.66, -6.7), Vector3(2.3, -0.8, -8.3)],
+        [Vector3(-0.2, -0.55, -6.8), Vector3(-2.4, -0.82, -8.6)]
+    ]
+    for pair in points:
+        _add_glowing_segment(pair[0], pair[1], 0.045, Color("#d8ff91"))
+    for i in range(14):
+        var node := MeshInstance3D.new()
+        var mesh := SphereMesh.new()
+        mesh.radius = 0.045 + float(i % 2) * 0.018
+        mesh.height = mesh.radius * 2.0
+        node.mesh = mesh
+        node.position = Vector3(-2.0 + float((i * 13) % 48) * 0.12, -0.55 - float(i % 4) * 0.07, -6.0 - float((i * 9) % 28) * 0.1)
+        node.material_override = _glow_mat(Color("#9f7cff"), Color("#a98cff"), 2.2, 0.8)
+        world_root.add_child(node)
+        root_nodes.append(node)
+
+func _add_glowing_segment(a: Vector3, b: Vector3, radius: float, color: Color) -> void:
+    var segment := MeshInstance3D.new()
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = radius
+    mesh.bottom_radius = radius * 1.35
+    mesh.height = a.distance_to(b)
+    mesh.radial_segments = 8
+    segment.mesh = mesh
+    segment.position = (a + b) * 0.5
+    segment.look_at(b, Vector3.UP)
+    segment.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+    segment.material_override = _glow_mat(color, color, 2.6, 0.9)
+    world_root.add_child(segment)
+    root_nodes.append(segment)
+
+func _create_leaf_particles() -> void:
+    for i in range(14):
+        var leaf := MeshInstance3D.new()
+        var mesh := QuadMesh.new()
+        mesh.size = Vector2(0.16 + float(i % 3) * 0.04, 0.10 + float(i % 2) * 0.03)
+        leaf.mesh = mesh
+        leaf.position = Vector3(-8.0 + float((i * 17) % 25) * 0.55, 1.0 + float((i * 11) % 16) * 0.18, -4.0 - float((i * 7) % 20) * 0.5)
+        leaf.rotation_degrees = Vector3(0, float(i * 37), float(i * 23))
+        leaf.material_override = _glow_mat(Color("#739f58"), Color("#8acb6a"), 0.35, 0.78)
+        world_root.add_child(leaf)
+        leaf_particles.append(leaf)
+
+func _glow_mat(color: Color, emission: Color, emission_energy: float, alpha: float) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_color = Color(color.r, color.g, color.b, alpha)
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+    material.emission_enabled = true
+    material.emission = emission
+    material.emission_energy_multiplier = emission_energy
+    material.roughness = 0.35
+    material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    return material
+
 func _animate_world() -> void:
     if camera:
         var target := Vector3(0.0 + sin(time * 0.045) * 1.4, 1.7 + sin(time * 0.17) * 0.08, -10.0)
@@ -571,12 +702,31 @@ func _animate_world() -> void:
     for i in range(grass_blades.size()):
         grass_blades[i].rotation_degrees.z += sin(time * 0.6 + i) * 0.002
 
+    for i in range(light_particles.size()):
+        var p := light_particles[i]
+        p.position.y += sin(time * 0.45 + i * 0.7) * 0.0015
+        if i >= 7:
+            var pulse := 0.82 + 0.25 * sin(time * 2.0 + i)
+            p.scale = Vector3.ONE * pulse
+
+    for i in range(leaf_particles.size()):
+        var leaf := leaf_particles[i]
+        leaf.position.x += sin(time * 0.25 + i) * 0.0025
+        leaf.position.y += cos(time * 0.55 + i) * 0.002
+        leaf.rotation_degrees.y += 0.08
+
+    for i in range(root_nodes.size()):
+        var root := root_nodes[i]
+        var pulse := 0.92 + 0.12 * sin(time * 1.5 + i)
+        root.scale = Vector3.ONE * pulse
+
 func _build_interface() -> void:
     menu_layer = CanvasLayer.new()
     add_child(menu_layer)
 
+    # The UI sits inside the ecosystem instead of behaving like a dashboard.
     var vignette := ColorRect.new()
-    vignette.color = Color(0.0, 0.015, 0.01, 0.20)
+    vignette.color = Color(0.0, 0.01, 0.005, 0.16)
     vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     menu_layer.add_child(vignette)
 
@@ -584,10 +734,10 @@ func _build_interface() -> void:
     menu_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     menu_layer.add_child(menu_root)
 
-    # Title: part of the world, not a dashboard.
     var brand := VBoxContainer.new()
-    brand.position = Vector2(54, 42)
-    brand.custom_minimum_size = Vector2(300, 110)
+    brand.position = Vector2(52, 38)
+    brand.custom_minimum_size = Vector2(360, 120)
+    brand.add_theme_constant_override("separation", 2)
     menu_root.add_child(brand)
 
     var title := Label.new()
@@ -608,11 +758,10 @@ func _build_interface() -> void:
     location.add_theme_color_override("font_color", MUTED)
     brand.add_child(location)
 
-    # Main actions, deliberately sparse.
     var nav := VBoxContainer.new()
-    nav.position = Vector2(54, 280)
-    nav.custom_minimum_size = Vector2(310, 300)
-    nav.add_theme_constant_override("separation", 9)
+    nav.position = Vector2(52, 275)
+    nav.custom_minimum_size = Vector2(350, 290)
+    nav.add_theme_constant_override("separation", 10)
     menu_root.add_child(nav)
 
     _add_main_action(nav, "ENTRAR EN EL BOSQUE", "continuar la investigación", _enter_world, true)
@@ -620,22 +769,15 @@ func _build_interface() -> void:
     _add_main_action(nav, "ATLAS VIVO", "lo que has descubierto", _atlas, false)
     _add_main_action(nav, "EXPEDICIONES", "otros biomas y regiones", _expeditions, false)
 
-    var bottom := Label.new()
-    bottom.text = "Mueve el tiempo. Cambia la luz. Observa antes de intervenir."
-    bottom.position = Vector2(54, 650)
-    bottom.add_theme_font_size_override("font_size", 12)
-    bottom.add_theme_color_override("font_color", Color("#8fa493"))
-    menu_root.add_child(bottom)
-
-    # NORA is a presence, not a chat box.
+    # NORA appears as an observation note, not as a chatbot.
     var nora := PanelContainer.new()
-    nora.position = Vector2(905, 48)
-    nora.size = Vector2(315, 86)
-    nora.add_theme_stylebox_override("panel", _box(GLASS, 16, Color(0.32, 0.47, 0.36, 0.45), 1))
+    nora.position = Vector2(890, 42)
+    nora.size = Vector2(330, 116)
+    nora.add_theme_stylebox_override("panel", _box(Color(0.01, 0.035, 0.022, 0.70), 16, Color(0.38, 0.62, 0.42, 0.45), 1))
     menu_root.add_child(nora)
 
     var nora_box := VBoxContainer.new()
-    nora_box.add_theme_constant_override("separation", 4)
+    nora_box.add_theme_constant_override("separation", 5)
     nora.add_child(nora_box)
 
     var nora_name := Label.new()
@@ -645,22 +787,59 @@ func _build_interface() -> void:
     nora_box.add_child(nora_name)
 
     var nora_msg := Label.new()
-    nora_msg.text = "Hay actividad bajo la hojarasca.\nTodavía no sé qué significa."
+    nora_msg.text = "La señal recorre la planta.\\nHay actividad bajo la hojarasca.\\nTodavía no sé qué significa."
     nora_msg.add_theme_font_size_override("font_size", 13)
     nora_msg.add_theme_color_override("font_color", TEXT)
     nora_box.add_child(nora_msg)
 
+    # Scale rail: the same living world, from leaf to microbial life.
+    var rail := VBoxContainer.new()
+    rail.position = Vector2(1135, 270)
+    rail.custom_minimum_size = Vector2(105, 300)
+    rail.add_theme_constant_override("separation", 12)
+    menu_root.add_child(rail)
+
+    var rail_title := Label.new()
+    rail_title.text = "ESCALA VIVA"
+    rail_title.add_theme_font_size_override("font_size", 10)
+    rail_title.add_theme_color_override("font_color", MUTED)
+    rail.add_theme_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
+    rail.add_child(rail_title)
+
+    var levels := ["HOJA", "PLANTA", "RAÍCES", "MICELIO", "MICRO VIDA"]
+    for i in range(levels.size()):
+        var level := HBoxContainer.new()
+        level.alignment = BoxContainer.ALIGNMENT_END
+        level.add_theme_constant_override("separation", 8)
+        rail.add_child(level)
+        var dot := Label.new()
+        dot.text = "●"
+        dot.add_theme_font_size_override("font_size", 10 if i > 0 else 12)
+        dot.add_theme_color_override("font_color", ACCENT if i == 0 else ACCENT_2)
+        level.add_child(dot)
+        var label := Label.new()
+        label.text = levels[i]
+        label.add_theme_font_size_override("font_size", 11)
+        label.add_theme_color_override("font_color", TEXT if i == 0 else MUTED)
+        level.add_child(label)
+
+    var bottom := Label.new()
+    bottom.text = "✦  Mueve el tiempo. Cambia la luz. Observa antes de intervenir."
+    bottom.position = Vector2(52, 658)
+    bottom.add_theme_font_size_override("font_size", 12)
+    bottom.add_theme_color_override("font_color", Color("#a5bda5"))
+    menu_root.add_child(bottom)
+
     hint_label = Label.new()
     hint_label.text = "●  ECOSISTEMA ACTIVO"
-    hint_label.position = Vector2(1060, 660)
+    hint_label.position = Vector2(1030, 662)
     hint_label.add_theme_font_size_override("font_size", 11)
     hint_label.add_theme_color_override("font_color", ACCENT_2)
     menu_root.add_child(hint_label)
 
-    # Subtle in-world note panel for secondary menu actions.
     info_panel = PanelContainer.new()
-    info_panel.position = Vector2(760, 510)
-    info_panel.size = Vector2(455, 125)
+    info_panel.position = Vector2(700, 500)
+    info_panel.size = Vector2(450, 130)
     info_panel.visible = false
     info_panel.add_theme_stylebox_override("panel", _box(GLASS_LIGHT, 16, LINE, 1))
     menu_root.add_child(info_panel)
@@ -694,12 +873,12 @@ func _add_main_action(parent: VBoxContainer, title_text: String, hint: String, a
 
     var button := Button.new()
     button.text = title_text
-    button.custom_minimum_size = Vector2(245 if primary else 215, 52)
+    button.custom_minimum_size = Vector2(285 if primary else 245, 52)
     button.alignment = HORIZONTAL_ALIGNMENT_LEFT
     button.add_theme_font_size_override("font_size", 19 if primary else 15)
     button.add_theme_color_override("font_color", TEXT if primary else Color("#c0d0c1"))
     button.add_theme_color_override("font_hover_color", ACCENT)
-    button.add_theme_stylebox_override("normal", _box(Color(0.02, 0.06, 0.04, 0.48) if primary else Color(0.02, 0.05, 0.035, 0.22), 10, Color(0.3, 0.45, 0.34, 0.38), 1))
+    button.add_theme_stylebox_override("normal", _box(Color(0.015, 0.05, 0.028, 0.58) if primary else Color(0.01, 0.035, 0.022, 0.28), 10, Color(0.35, 0.58, 0.40, 0.46), 1))
     button.add_theme_stylebox_override("hover", _box(Color(0.07, 0.15, 0.10, 0.72), 10, ACCENT, 1))
     button.add_theme_stylebox_override("pressed", _box(Color(0.10, 0.20, 0.13, 0.82), 10, ACCENT, 1))
     button.tooltip_text = hint
