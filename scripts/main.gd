@@ -278,7 +278,7 @@ responde y conserva memoria."
     content.add_child(nora_panel)
 
     var nora_text := Label.new()
-    nora_text.text = "NORA  ·  "No hay suficiente evidencia todavía.\nPodemos comenzar observando el suelo, el agua y la vegetación.""
+    nora_text.text = "NORA  ·  No hay suficiente evidencia todavía.\nPodemos comenzar observando el suelo, el agua y la vegetación."
     nora_text.add_theme_font_size_override("font_size", 15)
     nora_text.add_theme_color_override("font_color", Color("#c6d8c8"))
     nora_panel.add_child(nora_text)
