@@ -22,7 +22,7 @@ echo
 QUAT_DIR="$VENDOR/quaternius/stylized_nature_megakit"
 MIRROR_DIR="$CACHE/FreeModels"
 
-if [ ! -d "$QUAT_DIR" ] || [ -z "$(find "$QUAT_DIR" -type f -print -quit 2>/dev/null)" ]; then
+if [ ! -d "$QUAT_DIR" ] || [ -z "$(find "$QUAT_DIR" -type f -name "*.gltf" -print -quit 2>/dev/null)" ] || [ -z "$(find "$QUAT_DIR" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" \) -print -quit 2>/dev/null)" ]; then
   echo "[1/2] Installing Quaternius Stylized Nature MegaKit..."
 
   if [ ! -d "$MIRROR_DIR/.git" ]; then
@@ -44,12 +44,10 @@ if [ ! -d "$QUAT_DIR" ] || [ -z "$(find "$QUAT_DIR" -type f -print -quit 2>/dev/
   rm -rf "$QUAT_DIR"
   mkdir -p "$QUAT_DIR"
 
-  # glTF is the preferred format for Godot.
-  if [ -d "$SRC/glTF" ]; then
-    cp -R "$SRC/glTF/." "$QUAT_DIR/"
-  else
-    cp -R "$SRC/." "$QUAT_DIR/"
-  fi
+  # Copy the complete pack, not only glTF. The glTF scenes can reference
+  # textures/material resources next to the models; copying only glTF makes
+  # Godot fail to instantiate the scenes and silently fall back to primitives.
+  cp -R "$SRC/." "$QUAT_DIR/"
 
   cp "$ROOT/assets/ASSET_PIPELINE.md" "$QUAT_DIR/../ASSET_SOURCE_NOTES.md" 2>/dev/null || true
 else
@@ -77,6 +75,8 @@ fi
 
 echo
 echo "Asset installation finished."
+echo "Installed model files: $(find "$QUAT_DIR" -type f \( -name "*.gltf" -o -name "*.glb" \) | wc -l)"
+echo "Installed texture files: $(find "$QUAT_DIR" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" \) | wc -l)"
 echo "Nature assets: $QUAT_DIR"
 echo
 echo "Next: open SAVIA in Godot and import the project assets."
