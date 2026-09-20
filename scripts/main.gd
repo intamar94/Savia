@@ -48,25 +48,25 @@ func _build_world() -> void:
     var env := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#17271e")
+    environment.background_color = Color("#0b1b16")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#9ab8a2")
-    environment.ambient_light_energy = 0.62
+    environment.ambient_light_color = Color("#b8d5a0")
+    environment.ambient_light_energy = 0.82
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.glow_enabled = true
-    environment.glow_intensity = 0.7
-    environment.glow_bloom = 0.12
+    environment.glow_intensity = 1.0
+    environment.glow_bloom = 0.22
     environment.fog_enabled = true
-    environment.fog_light_color = Color("#789789")
-    environment.fog_density = 0.0032
+    environment.fog_light_color = Color("#47745d")
+    environment.fog_density = 0.0022
     environment.fog_sky_affect = 0.45
     env.environment = environment
     world_root.add_child(env)
 
     var moon := DirectionalLight3D.new()
     moon.rotation_degrees = Vector3(-42, -32, 0)
-    moon.light_energy = 1.35
-    moon.light_color = Color("#dce9d0")
+    moon.light_energy = 1.65
+    moon.light_color = Color("#fff0c8")
     moon.shadow_enabled = true
     world_root.add_child(moon)
 
@@ -78,6 +78,7 @@ func _build_world() -> void:
 
     _index_nature_assets()
     _create_ground()
+    _create_soil_layers()
     _create_water()
     _create_distant_forest()
     _create_foreground_forest()
@@ -86,6 +87,9 @@ func _build_world() -> void:
     _create_fireflies()
     _create_mushroom_cluster()
     _create_fern_beds()
+    _create_flower_beds()
+    _create_mushroom_assets()
+    _create_insect_swarm()
     _create_wildlife()
     _create_birds()
     _create_savia_hero()
@@ -207,7 +211,7 @@ func _create_ground() -> void:
     mesh.size = Vector2(70, 70)
     ground.mesh = mesh
     ground.position = Vector3(0, -0.42, -10)
-    ground.material_override = _mat(Color("#1c3025"), 0.95)
+    ground.material_override = _mat(Color("#243b28"), 0.9)
     world_root.add_child(ground)
 
     for i in range(18):
@@ -224,6 +228,78 @@ func _create_ground() -> void:
         rock.material_override = _mat(Color("#405044"), 0.98)
         world_root.add_child(rock)
 
+func _create_soil_layers() -> void:
+    # A stylized exposed soil profile keeps the scientific layers visible from
+    # the menu: surface litter, O/A/B/C horizons and bedrock.
+    var panel := Node3D.new()
+    panel.name = "SoilProfile"
+    panel.position = Vector3(3.0, -0.65, -8.8)
+    world_root.add_child(panel)
+
+    var layers := [
+        ["O · HOJARASCA", 0.34, Color("#5b4430")],
+        ["A · HUMUS", 0.48, Color("#6f4b31")],
+        ["B · MINERAL", 0.56, Color("#805b3c")],
+        ["C · MATERIAL", 0.62, Color("#9a7650")],
+        ["R · ROCA", 0.52, Color("#5c6460")]
+    ]
+    var y := 0.0
+    for i in range(layers.size()):
+        var layer := MeshInstance3D.new()
+        var mesh := BoxMesh.new()
+        mesh.size = Vector3(7.2, layers[i][1], 0.38)
+        layer.mesh = mesh
+        layer.position = Vector3(0, y - layers[i][1] * 0.5, 0)
+        layer.material_override = _mat(layers[i][2], 0.92)
+        panel.add_child(layer)
+
+        var stripe := MeshInstance3D.new()
+        var stripe_mesh := BoxMesh.new()
+        stripe_mesh.size = Vector3(0.055, layers[i][1] * 0.8, 0.025)
+        stripe.mesh = stripe_mesh
+        stripe.position = Vector3(-3.25, layer.position.y, -0.22)
+        stripe.material_override = _glow_mat(ACCENT if i < 2 else ACCENT_2, ACCENT, 0.45, 0.72)
+        panel.add_child(stripe)
+        y -= layers[i][1]
+
+    # Root system inside the exposed profile.
+    var roots := [
+        [Vector3(-1.2, -0.18, -0.24), Vector3(-0.5, -0.75, -0.24)],
+        [Vector3(-0.5, -0.75, -0.24), Vector3(-1.8, -1.25, -0.24)],
+        [Vector3(-0.5, -0.75, -0.24), Vector3(0.9, -1.15, -0.24)],
+        [Vector3(0.9, -1.15, -0.24), Vector3(2.2, -1.65, -0.24)],
+        [Vector3(0.9, -1.15, -0.24), Vector3(1.4, -2.05, -0.24)]
+    ]
+    for pair in roots:
+        _add_profile_root(panel, pair[0], pair[1])
+
+    # Mycorrhizal "spark" points and soil life.
+    for i in range(30):
+        var life := MeshInstance3D.new()
+        var m := SphereMesh.new()
+        m.radius = 0.018 + float(i % 3) * 0.009
+        m.height = m.radius * 2.0
+        life.mesh = m
+        life.position = Vector3(-3.0 + float((i * 17) % 58) * 0.10, -0.28 - float((i * 13) % 23) * 0.085, -0.25)
+        life.material_override = _glow_mat(Color("#75c9a0") if i % 2 == 0 else Color("#b49cff"), Color("#8ef0b5") if i % 2 == 0 else Color("#b9a2ff"), 2.0, 0.78)
+        panel.add_child(life)
+        root_nodes.append(life)
+
+func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
+    var root := MeshInstance3D.new()
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = 0.035
+    mesh.bottom_radius = 0.065
+    mesh.height = a.distance_to(b)
+    mesh.radial_segments = 7
+    root.mesh = mesh
+    root.position = (a + b) * 0.5
+    root.look_at(b, Vector3.UP)
+    root.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+    root.material_override = _glow_mat(Color("#c7a86a"), Color("#e1c477"), 0.7, 0.95)
+    parent.add_child(root)
+    root_nodes.append(root)
+
 func _create_water() -> void:
     var river := MeshInstance3D.new()
     var mesh := PlaneMesh.new()
@@ -231,7 +307,7 @@ func _create_water() -> void:
     river.mesh = mesh
     river.position = Vector3(5.3, -0.12, -11)
     river.rotation_degrees.y = -5
-    river.material_override = _mat(Color("#224c52"), 0.22)
+    river.material_override = _mat(Color("#1d6970"), 0.18)
     world_root.add_child(river)
 
     for i in range(10):
@@ -443,6 +519,42 @@ func _create_fern_beds() -> void:
             leaf.material_override = _mat(Color("#50785a"), 0.9)
             fern.add_child(leaf)
             grass_blades.append(leaf)
+
+func _create_flower_beds() -> void:
+    var spots := [
+        Vector3(-7.5, 0, -7.5), Vector3(-5.8, 0, -10.0),
+        Vector3(5.5, 0, -9.0), Vector3(8.0, 0, -11.0),
+        Vector3(-10.0, 0, -12.0), Vector3(10.5, 0, -17.0)
+    ]
+    for i in range(spots.size()):
+        var flower := _add_nature_asset(["Flower_%d_Single.gltf" % (3 + i % 2), "Flower_3_Single.gltf", "Flower_4_Single.gltf"], spots[i], 0.28 + float(i % 2) * 0.08)
+        if flower:
+            flower.rotation.y = float(i) * 1.4
+
+func _create_mushroom_assets() -> void:
+    var spots := [
+        Vector3(-9.0, 0, -5.0), Vector3(-8.4, 0, -5.5),
+        Vector3(6.5, 0, -7.5), Vector3(7.1, 0, -7.9)
+    ]
+    for i in range(spots.size()):
+        var mushroom := _add_nature_asset(["Mushroom_Common.gltf", "Mushroom_1.gltf", "Mushroom_2.gltf"], spots[i], 0.24 + float(i % 2) * 0.06)
+        if mushroom:
+            mushroom.rotation.y = float(i) * 1.7
+
+func _create_insect_swarm() -> void:
+    # Small, colored points/wing silhouettes add motion at plant scale.
+    for i in range(18):
+        var insect := Node3D.new()
+        insect.position = Vector3(-10.0 + float((i * 19) % 21), 0.35 + float((i * 7) % 13) * 0.13, -5.0 - float((i * 11) % 20) * 0.5)
+        world_root.add_child(insect)
+        wildlife.append(insect)
+        var body := MeshInstance3D.new()
+        var body_mesh := SphereMesh.new()
+        body_mesh.radius = 0.035 + float(i % 2) * 0.015
+        body_mesh.height = body_mesh.radius * 2.0
+        body.mesh = body_mesh
+        body.material_override = _glow_mat(Color("#d5b45d") if i % 3 == 0 else Color("#6ec9a1"), Color("#f1d87b") if i % 3 == 0 else Color("#7ee5ba"), 1.2, 0.9)
+        insect.add_child(body)
 
 func _create_wildlife() -> void:
     # Small groups of real forest fauna give the scene a living food web.
@@ -809,8 +921,8 @@ func _build_interface() -> void:
 
     # NORA appears as an observation note, not as a chatbot.
     var nora := PanelContainer.new()
-    nora.position = Vector2(820, 42)
-    nora.size = Vector2(355, 116)
+    nora.position = Vector2(845, 42)
+    nora.size = Vector2(330, 116)
     nora.add_theme_stylebox_override("panel", _box(Color(0.01, 0.035, 0.022, 0.70), 16, Color(0.38, 0.62, 0.42, 0.45), 1))
     menu_root.add_child(nora)
 
@@ -844,7 +956,7 @@ func _build_interface() -> void:
     rail.add_theme_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
     rail.add_child(rail_title)
 
-    var levels := ["HOJA", "PLANTA", "RAÍCES", "MICELIO", "MICRO VIDA"]
+    var levels := ["ATMÓSFERA", "HOJA", "PLANTA", "RAÍCES", "SUELO", "MICELIO", "MICRO VIDA"]
     for i in range(levels.size()):
         var level := HBoxContainer.new()
         level.alignment = BoxContainer.ALIGNMENT_END
