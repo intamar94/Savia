@@ -3,19 +3,24 @@ extends Node3D
 var camera: Camera3D
 var world_root: Node3D
 var menu_layer: CanvasLayer
-var content_panel: PanelContainer
-var content_title: Label
-var content_body: Label
-var status_label: Label
+var menu_root: Control
+var info_panel: PanelContainer
+var info_title: Label
+var info_body: Label
+var hint_label: Label
 var time := 0.0
+var menu_open := true
+var fireflies: Array[Node3D] = []
+var grass_blades: Array[Node3D] = []
 
-const BG := Color("#0b1410")
-const PANEL := Color("#101d17")
-const PANEL_2 := Color("#16261d")
-const TEXT := Color("#e2eee0")
-const MUTED := Color("#9eb5a3")
-const ACCENT := Color("#a9c99e")
-const LINE := Color("#36513e")
+const BG := Color("#07110d")
+const GLASS := Color(0.025, 0.065, 0.045, 0.72)
+const GLASS_LIGHT := Color(0.055, 0.12, 0.08, 0.82)
+const TEXT := Color("#e6f0e1")
+const MUTED := Color("#9bb29f")
+const ACCENT := Color("#b7d98d")
+const ACCENT_2 := Color("#7db59a")
+const LINE := Color("#496b52")
 
 func _ready() -> void:
     _build_world()
@@ -23,11 +28,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
     time += delta
-    if camera:
-        camera.position.y = 5.8 + sin(time * 0.18) * 0.12
-        camera.look_at(Vector3(0, 1.2, -10), Vector3.UP)
-    if world_root:
-        world_root.rotation.y = sin(time * 0.025) * 0.025
+    _animate_world()
+    if menu_root and menu_open:
+        var breathe := 0.5 + sin(time * 0.65) * 0.5
+        hint_label.modulate.a = 0.72 + breathe * 0.22
 
 func _build_world() -> void:
     world_root = Node3D.new()
@@ -37,65 +41,101 @@ func _build_world() -> void:
     var env := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#101a16")
+    environment.background_color = BG
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#9bbca6")
-    environment.ambient_light_energy = 0.55
+    environment.ambient_light_color = Color("#9ab8a2")
+    environment.ambient_light_energy = 0.62
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    environment.glow_enabled = true
+    environment.glow_intensity = 0.7
+    environment.glow_bloom = 0.12
     environment.fog_enabled = true
-    environment.fog_light_color = Color("#789487")
-    environment.fog_density = 0.008
+    environment.fog_light_color = Color("#789789")
+    environment.fog_density = 0.012
     env.environment = environment
     world_root.add_child(env)
 
-    var sun := DirectionalLight3D.new()
-    sun.rotation_degrees = Vector3(-48, -28, 0)
-    sun.light_energy = 1.15
-    sun.shadow_enabled = true
-    world_root.add_child(sun)
+    var moon := DirectionalLight3D.new()
+    moon.rotation_degrees = Vector3(-38, -28, 0)
+    moon.light_energy = 1.0
+    moon.light_color = Color("#c9dfcf")
+    moon.shadow_enabled = true
+    world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(0, 5.8, 12)
-    camera.fov = 48.0
+    camera.position = Vector3(8.2, 5.2, 13.8)
+    camera.fov = 45.0
     world_root.add_child(camera)
-    camera.look_at(Vector3(0, 1.2, -10), Vector3.UP)
+    camera.look_at(Vector3(0, 1.7, -10), Vector3.UP)
 
+    _create_ground()
+    _create_water()
+    _create_distant_forest()
+    _create_foreground_forest()
+    _create_research_station()
+    _create_fireflies()
+    _create_mushroom_cluster()
+    _create_fern_beds()
+
+func _create_ground() -> void:
     var ground := MeshInstance3D.new()
-    var plane := PlaneMesh.new()
-    plane.size = Vector2(70, 70)
-    ground.mesh = plane
-    ground.position = Vector3(0, -0.35, -10)
-    ground.material_override = _mat(Color("#263c2d"))
+    var mesh := PlaneMesh.new()
+    mesh.size = Vector2(70, 70)
+    ground.mesh = mesh
+    ground.position = Vector3(0, -0.42, -10)
+    ground.material_override = _mat(Color("#1c3025"), 0.95)
     world_root.add_child(ground)
 
+    for i in range(18):
+        var rock := MeshInstance3D.new()
+        var sphere := SphereMesh.new()
+        sphere.radius = 0.25 + float(i % 4) * 0.12
+        sphere.height = sphere.radius * 1.35
+        rock.mesh = sphere
+        rock.position = Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30))
+        rock.scale = Vector3(1.5, 0.65, 1.0)
+        rock.material_override = _mat(Color("#405044"), 0.98)
+        world_root.add_child(rock)
+
+func _create_water() -> void:
     var river := MeshInstance3D.new()
-    var river_mesh := PlaneMesh.new()
-    river_mesh.size = Vector2(10, 70)
-    river.mesh = river_mesh
-    river.position = Vector3(4.0, -0.05, -10)
-    river.rotation_degrees.y = -4
-    river.material_override = _mat(Color("#294f57"), 0.05)
+    var mesh := PlaneMesh.new()
+    mesh.size = Vector2(9, 70)
+    river.mesh = mesh
+    river.position = Vector3(5.3, -0.12, -11)
+    river.rotation_degrees.y = -5
+    river.material_override = _mat(Color("#224c52"), 0.22)
     world_root.add_child(river)
 
-    for i in range(7):
-        var hill := MeshInstance3D.new()
-        var sphere := SphereMesh.new()
-        sphere.radius = 5.0 + i * 0.45
-        sphere.height = 7.0 + i * 0.6
-        hill.mesh = sphere
-        hill.position = Vector3(-18 + i * 6.0, 1.8 + (i % 2) * 0.8, -24 - (i % 3) * 2)
-        hill.scale = Vector3(1.8, 0.65, 1.2)
-        hill.material_override = _mat(Color("#20362b"))
-        world_root.add_child(hill)
+    for i in range(10):
+        var reed := Node3D.new()
+        reed.position = Vector3(1.0 + float(i % 5) * 0.75, 0, -5.0 - float(i * 3))
+        world_root.add_child(reed)
+        for j in range(3):
+            var blade := MeshInstance3D.new()
+            var blade_mesh := BoxMesh.new()
+            blade_mesh.size = Vector3(0.035, 0.85 + j * 0.15, 0.07)
+            blade.mesh = blade_mesh
+            blade.position = Vector3((j - 1) * 0.08, 0.38, 0)
+            blade.rotation_degrees.z = -12 + j * 10
+            blade.material_override = _mat(Color("#537d5d"), 0.8)
+            reed.add_child(blade)
 
-    for i in range(24):
-        var x := -17.0 + float((i * 17) % 34)
-        var z := -2.0 - float((i * 23) % 35)
-        if abs(x - 4.0) < 4.5:
-            x -= 7.0
-        _create_tree(Vector3(x, 0, z), 0.8 + float(i % 4) * 0.12)
+func _create_distant_forest() -> void:
+    for i in range(34):
+        var x := -20.0 + float((i * 13) % 40)
+        var z := -18.0 - float((i * 7) % 25)
+        _create_tree(Vector3(x, 0, z), 0.65 + float(i % 5) * 0.08, true)
 
-func _create_tree(pos: Vector3, scale_factor: float) -> void:
+func _create_foreground_forest() -> void:
+    for i in range(15):
+        var x := -17.0 + float((i * 19) % 32)
+        var z := -1.0 - float((i * 29) % 23)
+        if abs(x - 4.5) < 4.0:
+            x -= 6.0
+        _create_tree(Vector3(x, 0, z), 0.82 + float(i % 4) * 0.12, false)
+
+func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
     var tree := Node3D.new()
     tree.position = pos
     tree.scale = Vector3.ONE * scale_factor
@@ -103,250 +143,362 @@ func _create_tree(pos: Vector3, scale_factor: float) -> void:
 
     var trunk := MeshInstance3D.new()
     var trunk_mesh := CylinderMesh.new()
-    trunk_mesh.top_radius = 0.18
-    trunk_mesh.bottom_radius = 0.28
-    trunk_mesh.height = 2.6
+    trunk_mesh.top_radius = 0.16
+    trunk_mesh.bottom_radius = 0.29
+    trunk_mesh.height = 3.0
     trunk.mesh = trunk_mesh
-    trunk.position.y = 1.3
-    trunk.material_override = _mat(Color("#4b3627"))
+    trunk.position.y = 1.5
+    trunk.material_override = _mat(Color("#493a2d"), 0.96)
     tree.add_child(trunk)
 
-    var crown := MeshInstance3D.new()
-    var crown_mesh := SphereMesh.new()
-    crown_mesh.radius = 1.35
-    crown_mesh.height = 2.6
-    crown.mesh = crown_mesh
-    crown.position.y = 3.0
-    crown.material_override = _mat(Color("#31573b"))
-    tree.add_child(crown)
+    for j in range(3):
+        var crown := MeshInstance3D.new()
+        var crown_mesh := SphereMesh.new()
+        crown_mesh.radius = 1.25 - j * 0.16
+        crown_mesh.height = 2.3
+        crown.mesh = crown_mesh
+        crown.position = Vector3((j - 1) * 0.42, 2.65 + j * 0.48, 0)
+        crown.scale = Vector3(1.25, 0.72, 1.0)
+        crown.material_override = _mat(Color("#31563b") if not distant else Color("#274633"), 0.92)
+        tree.add_child(crown)
 
-func _mat(color: Color, roughness := 0.8) -> StandardMaterial3D:
-    var material := StandardMaterial3D.new()
-    material.albedo_color = color
-    material.roughness = roughness
-    return material
+func _create_research_station() -> void:
+    var station := Node3D.new()
+    station.position = Vector3(-4.2, 0, 0.4)
+    world_root.add_child(station)
+
+    var table := MeshInstance3D.new()
+    var table_mesh := BoxMesh.new()
+    table_mesh.size = Vector3(3.0, 0.22, 1.25)
+    table.mesh = table_mesh
+    table.position.y = 1.25
+    table.material_override = _mat(Color("#594838"), 0.88)
+    station.add_child(table)
+
+    for x in [-1.2, 1.2]:
+        for z in [-0.42, 0.42]:
+            var leg := MeshInstance3D.new()
+            var leg_mesh := CylinderMesh.new()
+            leg_mesh.top_radius = 0.07
+            leg_mesh.bottom_radius = 0.09
+            leg_mesh.height = 1.25
+            leg.mesh = leg_mesh
+            leg.position = Vector3(x, 0.62, z)
+            leg.material_override = _mat(Color("#46372d"), 0.95)
+            station.add_child(leg)
+
+    var lamp := OmniLight3D.new()
+    lamp.position = Vector3(0, 2.0, 0)
+    lamp.light_color = Color("#d6e8ad")
+    lamp.light_energy = 1.2
+    lamp.omni_range = 5.5
+    station.add_child(lamp)
+
+    var jar := MeshInstance3D.new()
+    var jar_mesh := CylinderMesh.new()
+    jar_mesh.top_radius = 0.18
+    jar_mesh.bottom_radius = 0.18
+    jar_mesh.height = 0.48
+    jar.mesh = jar_mesh
+    jar.position = Vector3(-0.7, 1.58, 0)
+    jar.material_override = _mat(Color("#8eb9a1"), 0.18)
+    station.add_child(jar)
+
+    var microscope := Node3D.new()
+    microscope.position = Vector3(0.45, 1.4, 0)
+    station.add_child(microscope)
+    var base := MeshInstance3D.new()
+    var base_mesh := BoxMesh.new()
+    base_mesh.size = Vector3(0.65, 0.1, 0.42)
+    base.mesh = base_mesh
+    base.material_override = _mat(Color("#26372f"), 0.45)
+    microscope.add_child(base)
+    var scope := MeshInstance3D.new()
+    var scope_mesh := CylinderMesh.new()
+    scope_mesh.top_radius = 0.08
+    scope_mesh.bottom_radius = 0.11
+    scope_mesh.height = 0.7
+    scope.mesh = scope_mesh
+    scope.rotation_degrees.z = -22
+    scope.position = Vector3(0, 0.32, 0)
+    scope.material_override = _mat(Color("#8a9b8e"), 0.35)
+    microscope.add_child(scope)
+
+func _create_fireflies() -> void:
+    for i in range(26):
+        var dot := MeshInstance3D.new()
+        var mesh := SphereMesh.new()
+        mesh.radius = 0.035
+        mesh.height = 0.07
+        dot.mesh = mesh
+        dot.position = Vector3(-16 + float((i * 17) % 32), 0.8 + float((i * 7) % 30) * 0.12, -3 - float((i * 19) % 28))
+        dot.material_override = _mat(Color("#bfe79b"), 0.15)
+        world_root.add_child(dot)
+        fireflies.append(dot)
+
+func _create_mushroom_cluster() -> void:
+    for i in range(9):
+        var mush := Node3D.new()
+        mush.position = Vector3(-11 + float(i % 4) * 0.55, 0, -4.5 - float(i / 4) * 0.55)
+        mush.scale = Vector3.ONE * (0.55 + float(i % 3) * 0.14)
+        world_root.add_child(mush)
+
+        var stem := MeshInstance3D.new()
+        var stem_mesh := CylinderMesh.new()
+        stem_mesh.top_radius = 0.06
+        stem_mesh.bottom_radius = 0.1
+        stem_mesh.height = 0.35
+        stem.mesh = stem_mesh
+        stem.position.y = 0.18
+        stem.material_override = _mat(Color("#c8c1a8"), 0.9)
+        mush.add_child(stem)
+
+        var cap := MeshInstance3D.new()
+        var cap_mesh := SphereMesh.new()
+        cap_mesh.radius = 0.25
+        cap_mesh.height = 0.2
+        cap.mesh = cap_mesh
+        cap.position.y = 0.38
+        cap.scale = Vector3(1.0, 0.45, 1.0)
+        cap.material_override = _mat(Color("#9d6b55"), 0.78)
+        mush.add_child(cap)
+
+func _create_fern_beds() -> void:
+    for i in range(18):
+        var fern := Node3D.new()
+        fern.position = Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22))
+        world_root.add_child(fern)
+        for j in range(5):
+            var leaf := MeshInstance3D.new()
+            var mesh := BoxMesh.new()
+            mesh.size = Vector3(0.035, 0.75 + float(j % 2) * 0.18, 0.07)
+            leaf.mesh = mesh
+            leaf.position = Vector3((j - 2) * 0.12, 0.35, 0)
+            leaf.rotation_degrees = Vector3(0, 0, -35 + j * 17)
+            leaf.material_override = _mat(Color("#50785a"), 0.9)
+            fern.add_child(leaf)
+            grass_blades.append(leaf)
+
+func _animate_world() -> void:
+    if camera:
+        var target := Vector3(0.0 + sin(time * 0.045) * 1.4, 1.7 + sin(time * 0.17) * 0.08, -10.0)
+        camera.position.x = 8.2 + sin(time * 0.035) * 1.5
+        camera.position.y = 5.2 + sin(time * 0.12) * 0.1
+        camera.look_at(target, Vector3.UP)
+
+    for i in range(fireflies.size()):
+        var f := fireflies[i]
+        var base := f.position
+        f.position = base + Vector3(sin(time * (0.5 + i * 0.01) + i) * 0.012, sin(time * 1.3 + i) * 0.018, cos(time * 0.6 + i) * 0.012)
+        var glow := 0.35 + 0.35 * sin(time * 1.8 + i)
+        f.scale = Vector3.ONE * (0.8 + glow)
+
+    for i in range(grass_blades.size()):
+        grass_blades[i].rotation_degrees.z += sin(time * 0.6 + i) * 0.002
 
 func _build_interface() -> void:
     menu_layer = CanvasLayer.new()
     add_child(menu_layer)
 
-    var shade := ColorRect.new()
-    shade.color = Color(0.015, 0.025, 0.02, 0.48)
-    shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    menu_layer.add_child(shade)
+    var vignette := ColorRect.new()
+    vignette.color = Color(0.0, 0.015, 0.01, 0.20)
+    vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    menu_layer.add_child(vignette)
 
-    # Top status bar
-    var top := PanelContainer.new()
-    top.position = Vector2(34, 24)
-    top.size = Vector2(1210, 58)
-    top.add_theme_stylebox_override("panel", _box(PANEL, 14, LINE, 1))
-    menu_layer.add_child(top)
+    menu_root = Control.new()
+    menu_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    menu_layer.add_child(menu_root)
 
-    var top_row := HBoxContainer.new()
-    top_row.add_theme_constant_override("separation", 18)
-    top.add_child(top_row)
-
-    var mark := Label.new()
-    mark.text = "SAVIA"
-    mark.add_theme_font_size_override("font_size", 23)
-    mark.add_theme_color_override("font_color", TEXT)
-    top_row.add_child(mark)
-
-    var divider := VSeparator.new()
-    top_row.add_child(divider)
-
-    var biome := Label.new()
-    biome.text = "BOSQUE TEMPLADO  /  INVESTIGACIÓN ACTIVA"
-    biome.add_theme_font_size_override("font_size", 14)
-    biome.add_theme_color_override("font_color", MUTED)
-    top_row.add_child(biome)
-
-    var top_spacer := Control.new()
-    top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    top_row.add_child(top_spacer)
-
-    var season := Label.new()
-    season.text = "DÍA 01  ·  PRIMAVERA"
-    season.add_theme_font_size_override("font_size", 13)
-    season.add_theme_color_override("font_color", ACCENT)
-    top_row.add_child(season)
-
-    # Main navigation
-    var nav := PanelContainer.new()
-    nav.position = Vector2(42, 112)
-    nav.size = Vector2(370, 545)
-    nav.add_theme_stylebox_override("panel", _box(PANEL, 18, LINE, 1))
-    menu_layer.add_child(nav)
-
-    var nav_box := VBoxContainer.new()
-    nav_box.add_theme_constant_override("separation", 7)
-    nav.add_child(nav_box)
+    # Title: part of the world, not a dashboard.
+    var brand := VBoxContainer.new()
+    brand.position = Vector2(54, 42)
+    brand.custom_minimum_size = Vector2(300, 110)
+    menu_root.add_child(brand)
 
     var title := Label.new()
     title.text = "SAVIA"
-    title.add_theme_font_size_override("font_size", 62)
+    title.add_theme_font_size_override("font_size", 58)
     title.add_theme_color_override("font_color", TEXT)
-    nav_box.add_child(title)
+    brand.add_child(title)
 
-    var subtitle := Label.new()
-    subtitle.text = "UN MUNDO VIVO"
-    subtitle.add_theme_font_size_override("font_size", 18)
-    subtitle.add_theme_color_override("font_color", MUTED)
-    nav_box.add_child(subtitle)
+    var line := Label.new()
+    line.text = "UN MUNDO QUE RESPIRA"
+    line.add_theme_font_size_override("font_size", 13)
+    line.add_theme_color_override("font_color", ACCENT)
+    brand.add_child(line)
 
-    var intro := Label.new()
-    intro.text = "Explora un ecosistema que cambia,
-responde y conserva memoria."
-    intro.add_theme_font_size_override("font_size", 14)
-    intro.add_theme_color_override("font_color", Color("#7f9b87"))
-    nav_box.add_child(intro)
+    var location := Label.new()
+    location.text = "BOSQUE TEMPLADO  ·  PRIMAVERA"
+    location.add_theme_font_size_override("font_size", 12)
+    location.add_theme_color_override("font_color", MUTED)
+    brand.add_child(location)
 
-    var gap := Control.new()
-    gap.custom_minimum_size = Vector2(1, 24)
-    nav_box.add_child(gap)
+    # Main actions, deliberately sparse.
+    var nav := VBoxContainer.new()
+    nav.position = Vector2(54, 280)
+    nav.custom_minimum_size = Vector2(310, 300)
+    nav.add_theme_constant_override("separation", 9)
+    menu_root.add_child(nav)
 
-    _add_nav_button(nav_box, "NUEVA INVESTIGACIÓN", "Comenzar una investigación", _new_investigation, true)
-    _add_nav_button(nav_box, "CONTINUAR", "Retomar el último bioma", _continue_game, false)
-    _add_nav_button(nav_box, "MIS BIOMAS", "Explorar tus mundos", _my_biomes, false)
-    _add_nav_button(nav_box, "ATLAS VIVO", "Fenómenos y conocimiento", _atlas, false)
+    _add_main_action(nav, "ENTRAR EN EL BOSQUE", "continuar la investigación", _enter_world, true)
+    _add_main_action(nav, "MIS MUNDOS", "ecosistemas que siguen vivos", _my_biomes, false)
+    _add_main_action(nav, "ATLAS VIVO", "lo que has descubierto", _atlas, false)
+    _add_main_action(nav, "EXPEDICIONES", "otros biomas y regiones", _expeditions, false)
 
-    var nav_gap := Control.new()
-    nav_gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    nav_box.add_child(nav_gap)
+    var bottom := Label.new()
+    bottom.text = "Mueve el tiempo. Cambia la luz. Observa antes de intervenir."
+    bottom.position = Vector2(54, 650)
+    bottom.add_theme_font_size_override("font_size", 12)
+    bottom.add_theme_color_override("font_color", Color("#8fa493"))
+    menu_root.add_child(bottom)
 
-    _add_nav_button(nav_box, "PERFIL", "Investigador", _profile, false)
-    _add_nav_button(nav_box, "OPCIONES", "Configuración", _options, false)
+    # NORA is a presence, not a chat box.
+    var nora := PanelContainer.new()
+    nora.position = Vector2(905, 48)
+    nora.size = Vector2(315, 86)
+    nora.add_theme_stylebox_override("panel", _box(GLASS, 16, Color(0.32, 0.47, 0.36, 0.45), 1))
+    menu_root.add_child(nora)
 
-    # Research dashboard
-    content_panel = PanelContainer.new()
-    content_panel.position = Vector2(445, 112)
-    content_panel.size = Vector2(795, 545)
-    content_panel.add_theme_stylebox_override("panel", _box(Color(0.055, 0.105, 0.08, 0.92), 18, LINE, 1))
-    menu_layer.add_child(content_panel)
+    var nora_box := VBoxContainer.new()
+    nora_box.add_theme_constant_override("separation", 4)
+    nora.add_child(nora_box)
 
-    var content := VBoxContainer.new()
-    content.add_theme_constant_override("separation", 12)
-    content_panel.add_child(content)
+    var nora_name := Label.new()
+    nora_name.text = "NORA  ·  PRESENCIA DE CAMPO"
+    nora_name.add_theme_font_size_override("font_size", 11)
+    nora_name.add_theme_color_override("font_color", ACCENT)
+    nora_box.add_child(nora_name)
 
-    var header := HBoxContainer.new()
-    content.add_child(header)
+    var nora_msg := Label.new()
+    nora_msg.text = "Hay actividad bajo la hojarasca.\nTodavía no sé qué significa."
+    nora_msg.add_theme_font_size_override("font_size", 13)
+    nora_msg.add_theme_color_override("font_color", TEXT)
+    nora_box.add_child(nora_msg)
 
-    var header_box := VBoxContainer.new()
-    header_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    header.add_child(header_box)
+    hint_label = Label.new()
+    hint_label.text = "●  ECOSISTEMA ACTIVO"
+    hint_label.position = Vector2(1060, 660)
+    hint_label.add_theme_font_size_override("font_size", 11)
+    hint_label.add_theme_color_override("font_color", ACCENT_2)
+    menu_root.add_child(hint_label)
 
-    content_title = Label.new()
-    content_title.text = "ESTADO DEL BIOMA"
-    content_title.add_theme_font_size_override("font_size", 28)
-    content_title.add_theme_color_override("font_color", TEXT)
-    header_box.add_child(content_title)
+    # Subtle in-world note panel for secondary menu actions.
+    info_panel = PanelContainer.new()
+    info_panel.position = Vector2(760, 510)
+    info_panel.size = Vector2(455, 125)
+    info_panel.visible = false
+    info_panel.add_theme_stylebox_override("panel", _box(GLASS_LIGHT, 16, LINE, 1))
+    menu_root.add_child(info_panel)
 
-    content_body = Label.new()
-    content_body.text = "Tu investigación acaba de comenzar."
-    content_body.add_theme_font_size_override("font_size", 14)
-    content_body.add_theme_color_override("font_color", MUTED)
-    header_box.add_child(content_body)
+    var info_box := VBoxContainer.new()
+    info_box.add_theme_constant_override("separation", 5)
+    info_panel.add_child(info_box)
 
-    var live := Label.new()
-    live.text = "●  VIVO"
-    live.add_theme_font_size_override("font_size", 13)
-    live.add_theme_color_override("font_color", ACCENT)
-    header.add_child(live)
+    info_title = Label.new()
+    info_title.add_theme_font_size_override("font_size", 19)
+    info_title.add_theme_color_override("font_color", TEXT)
+    info_box.add_child(info_title)
 
-    _add_section_label(content, "INVESTIGACIÓN")
+    info_body = Label.new()
+    info_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+    info_body.add_theme_font_size_override("font_size", 12)
+    info_body.add_theme_color_override("font_color", MUTED)
+    info_box.add_child(info_body)
 
-    var stats := GridContainer.new()
-    stats.columns = 3
-    stats.add_theme_constant_override("h_separation", 10)
-    stats.add_theme_constant_override("v_separation", 10)
-    stats.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    content.add_child(stats)
+    var close := Button.new()
+    close.text = "CERRAR"
+    close.custom_minimum_size = Vector2(100, 30)
+    close.add_theme_font_size_override("font_size", 11)
+    close.pressed.connect(_close_info)
+    info_box.add_child(close)
 
-    _add_stat(stats, "EXPLORACIÓN", "0 %", "Territorio observado")
-    _add_stat(stats, "CONOCIMIENTO", "0", "Fenómenos documentados")
-    _add_stat(stats, "PREGUNTAS", "3", "Preguntas abiertas")
-    _add_stat(stats, "HIPÓTESIS", "0", "En investigación")
-    _add_stat(stats, "ANOMALÍAS", "0", "Sin explicar")
-    _add_stat(stats, "REPRODUCCIONES", "0", "Resultados confirmados")
+func _add_main_action(parent: VBoxContainer, title_text: String, hint: String, action: Callable, primary: bool) -> void:
+    var row := HBoxContainer.new()
+    row.custom_minimum_size = Vector2(315, 58)
+    parent.add_child(row)
 
-    _add_section_label(content, "NORA")
-
-    var nora_panel := PanelContainer.new()
-    nora_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    nora_panel.custom_minimum_size = Vector2(1, 82)
-    nora_panel.add_theme_stylebox_override("panel", _box(PANEL_2, 12, LINE, 1))
-    content.add_child(nora_panel)
-
-    var nora_text := Label.new()
-    nora_text.text = "NORA  ·  No hay suficiente evidencia todavía.\nPodemos comenzar observando el suelo, el agua y la vegetación."
-    nora_text.add_theme_font_size_override("font_size", 15)
-    nora_text.add_theme_color_override("font_color", Color("#c6d8c8"))
-    nora_panel.add_child(nora_text)
-
-    _add_section_label(content, "ÚLTIMA ACTIVIDAD")
-
-    status_label = Label.new()
-    status_label.text = "Sin observaciones registradas. El ecosistema está esperando."
-    status_label.add_theme_font_size_override("font_size", 14)
-    status_label.add_theme_color_override("font_color", MUTED)
-    content.add_child(status_label)
-
-    var footer := Label.new()
-    footer.text = "SAVIA 0.2  ·  SIMULACIÓN CIENTÍFICA EN DESARROLLO"
-    footer.position = Vector2(42, 680)
-    footer.add_theme_font_size_override("font_size", 11)
-    footer.add_theme_color_override("font_color", Color("#718a78"))
-    menu_layer.add_child(footer)
-
-func _add_nav_button(parent: VBoxContainer, title_text: String, hint: String, action: Callable, primary: bool) -> void:
     var button := Button.new()
-    button.text = title_text + "    ›"
-    button.custom_minimum_size = Vector2(1, 52)
+    button.text = title_text
+    button.custom_minimum_size = Vector2(245 if primary else 215, 52)
     button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-    button.add_theme_font_size_override("font_size", 17 if primary else 15)
-    button.add_theme_color_override("font_color", TEXT if primary else MUTED)
-    button.add_theme_color_override("font_hover_color", TEXT)
-    button.add_theme_stylebox_override("normal", _box(Color("#17251c") if primary else Color("#111e17"), 10, LINE, 1))
-    button.add_theme_stylebox_override("hover", _box(Color("#213328"), 10, ACCENT, 1))
-    button.add_theme_stylebox_override("pressed", _box(Color("#2a4030"), 10, ACCENT, 1))
+    button.add_theme_font_size_override("font_size", 19 if primary else 15)
+    button.add_theme_color_override("font_color", TEXT if primary else Color("#c0d0c1"))
+    button.add_theme_color_override("font_hover_color", ACCENT)
+    button.add_theme_stylebox_override("normal", _box(Color(0.02, 0.06, 0.04, 0.48) if primary else Color(0.02, 0.05, 0.035, 0.22), 10, Color(0.3, 0.45, 0.34, 0.38), 1))
+    button.add_theme_stylebox_override("hover", _box(Color(0.07, 0.15, 0.10, 0.72), 10, ACCENT, 1))
+    button.add_theme_stylebox_override("pressed", _box(Color(0.10, 0.20, 0.13, 0.82), 10, ACCENT, 1))
     button.tooltip_text = hint
     button.pressed.connect(action)
-    parent.add_child(button)
+    row.add_child(button)
 
-func _add_section_label(parent: VBoxContainer, text_value: String) -> void:
-    var label := Label.new()
-    label.text = text_value
-    label.add_theme_font_size_override("font_size", 11)
-    label.add_theme_color_override("font_color", Color("#6f8b76"))
-    parent.add_child(label)
+    var arrow := Label.new()
+    arrow.text = "  ›"
+    arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    arrow.add_theme_font_size_override("font_size", 22)
+    arrow.add_theme_color_override("font_color", ACCENT_2)
+    row.add_child(arrow)
 
-func _add_stat(parent: GridContainer, title_text: String, value_text: String, detail: String) -> void:
-    var card := PanelContainer.new()
-    card.custom_minimum_size = Vector2(0, 82)
-    card.add_theme_stylebox_override("panel", _box(PANEL_2, 11, LINE, 1))
-    parent.add_child(card)
+func _enter_world() -> void:
+    menu_open = false
+    menu_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    var tween := create_tween()
+    tween.set_parallel(true)
+    tween.tween_property(menu_root, "modulate:a", 0.0, 0.65)
+    tween.tween_property(camera, "fov", 58.0, 0.8)
+    tween.set_parallel(false)
+    tween.tween_callback(_show_field_prompt)
+
+func _show_field_prompt() -> void:
+    menu_open = false
+    var prompt := PanelContainer.new()
+    prompt.position = Vector2(54, 560)
+    prompt.size = Vector2(390, 96)
+    prompt.add_theme_stylebox_override("panel", _box(GLASS, 14, LINE, 1))
+    menu_layer.add_child(prompt)
 
     var box := VBoxContainer.new()
-    box.add_theme_constant_override("separation", 2)
-    card.add_child(box)
-
-    var value := Label.new()
-    value.text = value_text
-    value.add_theme_font_size_override("font_size", 25)
-    value.add_theme_color_override("font_color", ACCENT)
-    box.add_child(value)
+    prompt.add_child(box)
 
     var title := Label.new()
-    title.text = title_text
-    title.add_theme_font_size_override("font_size", 11)
-    title.add_theme_color_override("font_color", TEXT)
+    title.text = "LA INVESTIGACIÓN COMIENZA AQUÍ"
+    title.add_theme_font_size_override("font_size", 14)
+    title.add_theme_color_override("font_color", ACCENT)
     box.add_child(title)
 
-    var detail_label := Label.new()
-    detail_label.text = detail
-    detail_label.add_theme_font_size_override("font_size", 10)
-    detail_label.add_theme_color_override("font_color", MUTED)
-    box.add_child(detail_label)
+    var body := Label.new()
+    body.text = "No intervengas todavía. Escucha el suelo."
+    body.add_theme_font_size_override("font_size", 16)
+    body.add_theme_color_override("font_color", TEXT)
+    box.add_child(body)
+
+    var back := Button.new()
+    back.text = "VOLVER AL CAMPAMENTO"
+    back.custom_minimum_size = Vector2(1, 34)
+    back.pressed.connect(func():
+        prompt.queue_free()
+        menu_root.modulate.a = 1.0
+        menu_root.mouse_filter = Control.MOUSE_FILTER_STOP
+        menu_open = true
+        camera.fov = 45.0
+    )
+    box.add_child(back)
+
+func _my_biomes() -> void:
+    _show_info("MIS MUNDOS", "Cada bioma conserva clima, suelo, organismos, observaciones y memoria ambiental. No hay porcentaje de finalización.")
+
+func _atlas() -> void:
+    _show_info("ATLAS VIVO", "Aquí se reúnen especies, fenómenos, anomalías, hipótesis y conceptos que hayas documentado. Las preguntas abiertas permanecen abiertas.")
+
+func _expeditions() -> void:
+    _show_info("EXPEDICIONES", "Cuando tu simbiosis pueda adaptarse a otros perfiles de suelo, podrás viajar a humedales, tundras, desiertos, costas, montañas y bosques tropicales.")
+
+func _show_info(title_text: String, body_text: String) -> void:
+    info_title.text = title_text
+    info_body.text = body_text
+    info_panel.visible = true
+
+func _close_info() -> void:
+    info_panel.visible = false
 
 func _box(color: Color, radius: int, border_color: Color, border_width: int) -> StyleBoxFlat:
     var box := StyleBoxFlat.new()
@@ -360,53 +512,14 @@ func _box(color: Color, radius: int, border_color: Color, border_width: int) -> 
     box.border_width_top = border_width
     box.border_width_bottom = border_width
     box.border_color = border_color
-    box.content_margin_left = 18
-    box.content_margin_right = 18
-    box.content_margin_top = 14
-    box.content_margin_bottom = 14
+    box.content_margin_left = 16
+    box.content_margin_right = 16
+    box.content_margin_top = 12
+    box.content_margin_bottom = 12
     return box
 
-func _new_investigation() -> void:
-    status_label.text = "Investigación iniciada. Observa antes de intervenir."
-    content_title.text = "NUEVA INVESTIGACIÓN"
-    content_body.text = "Bosque templado · Punto de partida seleccionado"
-    _show_message("INVESTIGACIÓN INICIADA\n\nEl mundo ya está activo.\nTu primera tarea es observar, no intervenir.")
-
-func _continue_game() -> void:
-    status_label.text = "Continuación preparada para el sistema de guardado persistente."
-    content_title.text = "CONTINUAR"
-    content_body.text = "Último estado conocido del ecosistema"
-    _show_message("CONTINUAR\n\nEl sistema de guardado persistente se conectará al estado completo del bioma.")
-
-func _my_biomes() -> void:
-    content_title.text = "MIS BIOMAS"
-    content_body.text = "Cada mundo conserva su propia historia."
-    status_label.text = "Bosque templado · Investigación activa"
-    _show_message("MIS BIOMAS\n\nBOSQUE TEMPLADO\nInvestigación activa\nPreguntas abiertas: 3\nFenómenos documentados: 0")
-
-func _atlas() -> void:
-    content_title.text = "ATLAS VIVO"
-    content_body.text = "Conocimiento, fenómenos y anomalías."
-    status_label.text = "El Atlas todavía no contiene descubrimientos."
-    _show_message("ATLAS VIVO\n\nFenómenos conocidos\nHipótesis\nAnomalías\nPreguntas abiertas\n\nEl catálogo crecerá con tus investigaciones.")
-
-func _profile() -> void:
-    content_title.text = "PERFIL DEL INVESTIGADOR"
-    content_body.text = "Tu conocimiento se construye con evidencia."
-    status_label.text = "Investigador · Nivel inicial"
-    _show_message("PERFIL\n\nConocimiento: inicial\nDescubrimientos: 0\nReproducciones: 0")
-
-func _options() -> void:
-    content_title.text = "OPCIONES"
-    content_body.text = "Configuración de la experiencia."
-    status_label.text = "Opciones disponibles próximamente."
-    _show_message("OPCIONES\n\nGráficos\nAudio\nControles\nIdioma\nAccesibilidad")
-
-func _show_message(message: String) -> void:
-    var popup := AcceptDialog.new()
-    popup.title = "SAVIA"
-    popup.dialog_text = message
-    popup.ok_button_text = "CONTINUAR"
-    menu_layer.add_child(popup)
-    popup.popup_centered(Vector2(540, 310))
-    popup.confirmed.connect(popup.queue_free)
+func _mat(color: Color, roughness := 0.8) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_color = color
+    material.roughness = roughness
+    return material
