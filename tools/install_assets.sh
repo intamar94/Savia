@@ -8,6 +8,8 @@ CACHE="$ROOT/.asset_cache"
 
 mkdir -p "$VENDOR/quaternius" "$VENDOR/polyhaven" "$ASSET_ROOT/nature" "$ASSET_ROOT/laboratory" "$ASSET_ROOT/fauna" "$ASSET_ROOT/materials" "$ASSET_ROOT/hdris" "$CACHE"
 
+git config --global --add safe.directory "$ROOT" 2>/dev/null || true
+
 echo "SAVIA Asset Installer"
 echo "Project: $ROOT"
 echo
@@ -29,6 +31,8 @@ if [ ! -d "$QUAT_DIR" ] || [ -z "$(find "$QUAT_DIR" -type f -print -quit 2>/dev/
       https://github.com/agentkaerf/FreeModels.git "$MIRROR_DIR"
   fi
 
+  git config --global --add safe.directory "$MIRROR_DIR" 2>/dev/null || true
+  git -C "$MIRROR_DIR" config --local --add safe.directory "$MIRROR_DIR" 2>/dev/null || true
   git -C "$MIRROR_DIR" sparse-checkout set 'Stylized Nature MegaKit[Standard]'
 
   SRC="$MIRROR_DIR/Stylized Nature MegaKit[Standard]"
