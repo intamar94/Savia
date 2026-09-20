@@ -77,7 +77,6 @@ func _build_world() -> void:
     camera.look_at(Vector3(0.4, 1.0, -7.2), Vector3.UP)
 
     _index_nature_assets()
-    _test_nature_asset_pipeline()
     _create_ground()
     _create_water()
     _create_distant_forest()
@@ -164,37 +163,6 @@ func _get_nature_asset(candidates: Array[String]) -> PackedScene:
     print("SAVIA asset not found for candidates: ", candidates)
     nature_asset_cache[key] = null
     return null
-
-func _test_nature_asset_pipeline() -> void:
-    var tree_path := ""
-    var plant_path := ""
-    var rock_path := ""
-    for path in nature_asset_files:
-        var filename := path.get_file().to_lower()
-        if tree_path == "" and ("commontree" in filename or "normaltree" in filename) and filename.ends_with(".gltf"):
-            tree_path = path
-        elif plant_path == "" and ("fern" in filename or "flower" in filename or "plant" in filename) and filename.ends_with(".gltf"):
-            plant_path = path
-        elif rock_path == "" and ("rock" in filename or "pebble" in filename) and filename.ends_with(".gltf"):
-            rock_path = path
-
-    print("SAVIA ASSET PIPELINE: models=", nature_asset_files.size())
-    print("SAVIA TEST TREE: ", tree_path)
-    print("SAVIA TEST PLANT: ", plant_path)
-    print("SAVIA TEST ROCK: ", rock_path)
-
-    # Put one real asset in the world as a guaranteed visual test.
-    if tree_path != "":
-        var scene := ResourceLoader.load(tree_path, "PackedScene")
-        if scene is PackedScene:
-            var test_tree := scene.instantiate()
-            test_tree.name = "REAL_ASSET_TEST_TREE"
-            test_tree.position = Vector3(-0.5, 0.0, -6.0)
-            test_tree.scale = Vector3.ONE * 1.35
-            world_root.add_child(test_tree)
-            print("SAVIA REAL TREE OK: ", tree_path)
-        else:
-            print("SAVIA REAL TREE FAILED: ", tree_path, " loaded_type=", typeof(scene))
 
 func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: float) -> Node3D:
     var scene := _get_nature_asset(candidates)
