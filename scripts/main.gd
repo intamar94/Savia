@@ -81,6 +81,7 @@ func _build_world() -> void:
     _create_water()
     _create_distant_forest()
     _create_foreground_forest()
+    _create_real_tree_grove()
     _create_research_station()
     _create_fireflies()
     _create_mushroom_cluster()
@@ -304,6 +305,25 @@ func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
         crown.material_override = _mat(Color("#31563b") if not distant else Color("#274633"), 0.92)
         tree.add_child(crown)
 
+func _create_real_tree_grove() -> void:
+    # Force several real tree variants into the hero background. This is the
+    # visual proof that the Quaternius pipeline is active.
+    var positions := [
+        Vector3(-10.5, 0.0, -10.5),
+        Vector3(-7.5, 0.0, -13.0),
+        Vector3(7.8, 0.0, -12.5),
+        Vector3(11.0, 0.0, -15.0),
+        Vector3(-13.0, 0.0, -17.0)
+    ]
+    for i in range(positions.size()):
+        var tree := _add_nature_asset(
+            ["CommonTree_%d.gltf" % (i + 1), "NormalTree_%d.gltf" % (i + 1), "Tree_%d.gltf" % (i + 1), "DeadTree_%d.gltf" % (i + 1)],
+            positions[i],
+            0.75 + float(i % 3) * 0.12
+        )
+        if tree:
+            tree.rotation.y = float(i) * 0.8
+
 func _create_research_station() -> void:
     var station := Node3D.new()
     station.position = Vector3(-4.2, 0, 0.4)
@@ -407,7 +427,7 @@ func _create_mushroom_cluster() -> void:
 
 func _create_fern_beds() -> void:
     for i in range(18):
-        var real_plant := _add_nature_asset(["Fern_1.gltf", "Flower_3_Single.gltf", "Plant_7.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.55 + float(i % 3) * 0.12)
+        var real_plant := _add_nature_asset(["Fern_1.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf", "Plant_7.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.32 + float(i % 3) * 0.08)
         if real_plant:
             continue
         var fern := Node3D.new()
@@ -612,27 +632,16 @@ func _create_savia_hero() -> void:
     world_root.add_child(plant_light)
 
 func _create_light_beam() -> void:
-    # A soft volumetric-looking ray: one broad translucent shaft plus small
-    # motes. It should feel like sunlight revealing biological activity.
-    for i in range(3):
-        var beam := MeshInstance3D.new()
-        var mesh := QuadMesh.new()
-        mesh.size = Vector2(2.2 - i * 0.45, 9.0)
-        beam.mesh = mesh
-        beam.position = Vector3(-1.0 + i * 0.8, 4.5, -8.2 - i * 0.45)
-        beam.rotation_degrees = Vector3(-8, -16 + i * 3.0, -14 + i * 4.0)
-        beam.material_override = _glow_mat(Color(0.78, 1.0, 0.55, 0.055), Color("#d7ff9b"), 1.2, 0.055)
-        world_root.add_child(beam)
-        light_particles.append(beam)
-
-    for i in range(24):
+    # Soft light particles; the atmosphere-to-root path will later become a
+    # true volumetric effect once the asset composition is stable.
+    for i in range(32):
         var particle := MeshInstance3D.new()
         var sphere := SphereMesh.new()
-        sphere.radius = 0.018 + float(i % 3) * 0.009
+        sphere.radius = 0.012 + float(i % 4) * 0.007
         sphere.height = sphere.radius * 2.0
         particle.mesh = sphere
-        particle.position = Vector3(-3.0 + float((i * 13) % 42) * 0.15, 0.7 + float((i * 7) % 27) * 0.14, -4.5 - float((i * 11) % 25) * 0.28)
-        particle.material_override = _glow_mat(Color("#b8ef78"), Color("#d9ff9c"), 2.2, 0.82)
+        particle.position = Vector3(-4.0 + float((i * 17) % 52) * 0.16, 0.4 + float((i * 11) % 28) * 0.16, -3.5 - float((i * 7) % 24) * 0.38)
+        particle.material_override = _glow_mat(Color("#b8ef78"), Color("#d9ff9c"), 2.0, 0.78)
         world_root.add_child(particle)
         light_particles.append(particle)
 
