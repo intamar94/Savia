@@ -163,7 +163,8 @@ func create_insect(position: Vector3, scale_factor: float = 1.0) -> Node3D:
 	var wing_material = StandardMaterial3D.new()
 	wing_material.albedo_color = Color("#87ceeb")
 	wing_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	wing_material.alpha_scissor = BaseMaterial3D.ALPHA_SCISSOR_OPAQUE
+	# Godot 4.7 ya no expone ALPHA_SCISSOR_OPAQUE en BaseMaterial3D.
+	# La transparencia alfa del material es suficiente para estas alas.
 	
 	for side in [-1, 1]:
 		var wing = MeshInstance3D.new()
