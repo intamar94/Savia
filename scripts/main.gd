@@ -581,14 +581,14 @@ func _create_insect_swarm() -> void:
             )
             insect.add_child(wing)
 
-        var signal := MeshInstance3D.new()
+        var insect_signal := MeshInstance3D.new()
         var signal_mesh := SphereMesh.new()
         signal_mesh.radius = 0.018
         signal_mesh.height = 0.036
-        signal.mesh = signal_mesh
-        signal.position = Vector3(0.11, 0.0, 0)
-        signal.material_override = _glow_mat(Color("#d9ff9a"), Color("#eaffb0"), 1.4, 0.8)
-        insect.add_child(signal)
+        insect_signal.mesh = signal_mesh
+        insect_signal.position = Vector3(0.11, 0.0, 0)
+        insect_signal.material_override = _glow_mat(Color("#d9ff9a"), Color("#eaffb0"), 1.4, 0.8)
+        insect.add_child(insect_signal)
 
 func _create_wildlife() -> void:
     # Small groups of real forest fauna give the scene a living food web.
@@ -811,15 +811,15 @@ func _create_fruit_cluster() -> void:
         stem.material_override = _mat(Color("#4d7c3f"), 0.82)
         fruit.add_child(stem)
 
-        var signal := MeshInstance3D.new()
+        var fruit_signal := MeshInstance3D.new()
         var signal_mesh := SphereMesh.new()
         signal_mesh.radius = 0.045
         signal_mesh.height = 0.09
-        signal.mesh = signal_mesh
-        signal.position = Vector3(0, 0.02, 0.78)
-        signal.material_override = _glow_mat(Color("#ffbf65"), Color("#ffd68a"), 1.8, 0.8)
-        fruit.add_child(signal)
-        light_particles.append(signal)
+        fruit_signal.mesh = signal_mesh
+        fruit_signal.position = Vector3(0, 0.02, 0.78)
+        fruit_signal.material_override = _glow_mat(Color("#ffbf65"), Color("#ffd68a"), 1.8, 0.8)
+        fruit.add_child(fruit_signal)
+        light_particles.append(fruit_signal)
 
 func _create_bio_particles() -> void:
     # Pollen, spores, moisture and fluorescence-like observation points.
