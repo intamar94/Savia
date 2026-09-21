@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "project": "SAVIA",
+  "principles": {
+    "local_first": true,
+    "free_first": true,
+    "open_source_first": true,
+    "replaceable_tools": true,
+    "no_agent_required": true,
+    "destructive_operations_default": false
+  },
+  "tools": {
+    "blender": {
+      "kind": "3d",
+      "role": ["assets", "materials", "procedural_world", "rendering"],
+      "integration": "savia_blender_bridge",
+      "transport": "tcp_jsonl",
+      "host": "127.0.0.1",
+      "port": 9877,
+      "free": true,
+      "local": true
+    },
+    "godot": {
+      "kind": "engine",
+      "role": ["game", "simulation", "ui", "runtime_validation"],
+      "integration": "godot_cli",
+      "command": "godot",
+      "free": true,
+      "local": true
+    },
+    "git": {
+      "kind": "version_control",
+      "role": ["checkpoint", "diff", "history"],
+      "integration": "git_cli",
+      "command": "git",
+      "free": true,
+      "local": true
+    },
+    "github": {
+      "kind": "repository",
+      "role": ["remote_backup", "review", "collaboration"],
+      "integration": "github",
+      "free": true,
+      "local": false
+    },
+    "ollama": {
+      "kind": "local_ai",
+      "role": ["optional_assistance"],
+      "integration": "ollama_http",
+      "base_url": "http://127.0.0.1:11434",
+      "free": true,
+      "local": true,
+      "optional": true
+    }
+  }
+}
