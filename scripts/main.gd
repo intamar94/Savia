@@ -527,7 +527,7 @@ func _create_flower_beds() -> void:
         Vector3(-10.0, 0, -12.0), Vector3(10.5, 0, -17.0)
     ]
     for i in range(spots.size()):
-        var flower := _add_nature_asset(["Flower_%d_Single.gltf" % (3 + i % 2), "Flower_3_Single.gltf", "Flower_4_Single.gltf"], spots[i], 0.28 + float(i % 2) * 0.08)
+        var flower := _add_nature_asset(["Flower_%d_Single.gltf" % (3 + i % 2), "Flower_3_Single.gltf", "Flower_4_Single.gltf"], spots[i], 0.08 + float(i % 2) * 0.025)
         if flower:
             flower.rotation.y = float(i) * 1.4
 
@@ -542,19 +542,51 @@ func _create_mushroom_assets() -> void:
             mushroom.rotation.y = float(i) * 1.7
 
 func _create_insect_swarm() -> void:
-    # Small, colored points/wing silhouettes add motion at plant scale.
-    for i in range(18):
+    # Insects are readable silhouettes, not floating circles: body + wings +
+    # a small biological signal.
+    for i in range(14):
         var insect := Node3D.new()
-        insect.position = Vector3(-10.0 + float((i * 19) % 21), 0.35 + float((i * 7) % 13) * 0.13, -5.0 - float((i * 11) % 20) * 0.5)
+        insect.position = Vector3(
+            -7.5 + float((i * 19) % 17) * 0.65,
+            0.55 + float((i * 7) % 12) * 0.14,
+            -4.5 - float((i * 11) % 18) * 0.48
+        )
+        insect.scale = Vector3.ONE * (0.65 + float(i % 3) * 0.12)
         world_root.add_child(insect)
         wildlife.append(insect)
+
         var body := MeshInstance3D.new()
-        var body_mesh := SphereMesh.new()
-        body_mesh.radius = 0.035 + float(i % 2) * 0.015
-        body_mesh.height = body_mesh.radius * 2.0
+        var body_mesh := CapsuleMesh.new()
+        body_mesh.radius = 0.035
+        body_mesh.height = 0.20
         body.mesh = body_mesh
-        body.material_override = _glow_mat(Color("#d5b45d") if i % 3 == 0 else Color("#6ec9a1"), Color("#f1d87b") if i % 3 == 0 else Color("#7ee5ba"), 1.2, 0.9)
+        body.rotation_degrees.z = 90
+        body.material_override = _mat(Color("#3c3028"), 0.72)
         insect.add_child(body)
+
+        for side in [-1.0, 1.0]:
+            var wing := MeshInstance3D.new()
+            var wing_mesh := QuadMesh.new()
+            wing_mesh.size = Vector2(0.16, 0.10)
+            wing.mesh = wing_mesh
+            wing.position = Vector3(0, 0.015, side * 0.075)
+            wing.rotation_degrees.y = 18.0 * side
+            wing.material_override = _glow_mat(
+                Color("#a9d9bf") if i % 2 == 0 else Color("#d9b66a"),
+                Color("#bdf4d3") if i % 2 == 0 else Color("#f2d17b"),
+                0.8,
+                0.72
+            )
+            insect.add_child(wing)
+
+        var signal := MeshInstance3D.new()
+        var signal_mesh := SphereMesh.new()
+        signal_mesh.radius = 0.018
+        signal_mesh.height = 0.036
+        signal.mesh = signal_mesh
+        signal.position = Vector3(0.11, 0.0, 0)
+        signal.material_override = _glow_mat(Color("#d9ff9a"), Color("#eaffb0"), 1.4, 0.8)
+        insect.add_child(signal)
 
 func _create_wildlife() -> void:
     # Small groups of real forest fauna give the scene a living food web.
