@@ -84,16 +84,18 @@ func _build_world() -> void:
     _create_foreground_forest()
     _create_real_tree_grove()
     _create_central_tree()
-    _create_underground_cutaway()
+    _create_living_soil_scene()
     _create_fireflies()
-    _create_root_showcase()
-    _create_soil_life()
     _create_bio_particles()
 
 func _index_nature_assets() -> void:
     nature_asset_files.clear()
-    var root := "res://assets/vendor/quaternius/stylized_nature_megakit"
-    _scan_asset_directory(root)
+    var roots := [
+        "res://assets/vendor/quaternius/stylized_nature_megakit",
+        "res://assets/vendor/polyhaven"
+    ]
+    for root in roots:
+        _scan_asset_directory(root)
 
 func _scan_asset_directory(path: String) -> void:
     var dir := DirAccess.open(path)
@@ -358,87 +360,84 @@ func _create_central_tree() -> void:
         mound.material_override = _mat(Color("#284a31"), 0.98)
         world_root.add_child(mound)
 
-func _create_underground_cutaway() -> void:
-    # The lower half is a visible slice through the same forest floor.
-    # The top edge meets the surface; the camera can see the living horizons.
-    var cut := Node3D.new()
-    cut.name = "LivingSoilSection"
-    cut.position = Vector3(0.0, -0.40, -7.00)
-    world_root.add_child(cut)
+func _create_living_soil_scene() -> void:
+    # The soil is now represented by a real exposed-root asset rather than a
+    # rectangular stack of primitive boxes. The asset already contains bark,
+    # leaf litter and natural soil contours; SAVIA adds only the scientific
+    # perception layer around it.
+    var root_asset := _add_nature_asset(
+        ["single_root_1k.gltf", "single_root.gltf"],
+        Vector3(0.0, -0.42, -6.15),
+        2.55
+    )
+    if root_asset:
+        root_asset.rotation.y = PI
+        root_asset.rotation.x = -0.035
+        root_asset.name = "PolyHavenSingleRoot"
+    else:
+        print("SAVIA: Single Root asset not installed yet.")
 
-    var layers := [
-        [-0.05, 0.22, Color("#29482b")],
-        [-0.36, 0.40, Color("#60402b")],
-        [-0.84, 0.55, Color("#795239")],
-        [-1.48, 0.66, Color("#80634b")],
-        [-2.23, 0.76, Color("#665647")],
-        [-3.08, 0.88, Color("#414643")]
+    # A restrained biological signal follows the real root instead of drawing
+    # a carpet of luminous white cylinders.
+    var mycelium_paths := [
+        [Vector3(-0.20, -0.52, -5.55), Vector3(-1.15, -0.76, -5.72), Vector3(-2.20, -0.90, -5.95)],
+        [Vector3(0.15, -0.48, -5.60), Vector3(1.05, -0.72, -5.82), Vector3(2.10, -0.88, -6.05)],
+        [Vector3(-0.35, -0.58, -5.78), Vector3(-0.75, -1.05, -6.18), Vector3(-1.20, -1.30, -6.45)],
+        [Vector3(0.35, -0.56, -5.76), Vector3(0.72, -1.02, -6.12), Vector3(1.28, -1.24, -6.40)]
     ]
-    for data in layers:
-        var layer := MeshInstance3D.new()
-        var lm := BoxMesh.new()
-        lm.size = Vector3(12.5, data[1], 0.46)
-        layer.mesh = lm
-        layer.position = Vector3(0.0, data[0], 0.0)
-        layer.material_override = _mat(data[2], 0.99)
-        cut.add_child(layer)
+    for path in mycelium_paths:
+        for j in range(path.size() - 1):
+            _add_glowing_segment(path[j], path[j + 1], 0.006, Color("#79b99b"))
 
-    # The exposed front edge is irregular instead of a clean UI rectangle.
-    for i in range(32):
-        var clump := MeshInstance3D.new()
-        var cm := SphereMesh.new()
-        var r := 0.10 + float(i % 4) * 0.045
-        cm.radius = r
-        cm.height = r * 1.45
-        clump.mesh = cm
-        clump.position = Vector3(
-            -6.7 + i * 0.43,
-            0.03 + sin(i * 1.9) * 0.06,
-            -0.34
+    # A few points mark zones of biological activity without pretending that
+    # microbes are individually visible at this scale.
+    for i in range(12):
+        var node := MeshInstance3D.new()
+        var nm := SphereMesh.new()
+        nm.radius = 0.018 + float(i % 2) * 0.008
+        nm.height = nm.radius * 2.0
+        node.mesh = nm
+        node.position = Vector3(
+            -1.7 + float(i % 6) * 0.62,
+            -0.74 - float(i / 6) * 0.28,
+            -6.02 - sin(i * 1.7) * 0.22
         )
-        clump.material_override = _mat(Color("#1f3322"), 0.98)
-        cut.add_child(clump)
+        node.material_override = _glow_mat(Color("#86c9a1"), Color("#9ee5b7"), 0.75, 0.72)
+        world_root.add_child(node)
 
-    # Small roots/wood/stone fragments make each horizon readable.
-    for i in range(34):
-        var debris := MeshInstance3D.new()
-        var dm := SphereMesh.new()
-        var dr := 0.035 + float(i % 4) * 0.022
-        dm.radius = dr
-        dm.height = dr * 1.3
-        debris.mesh = dm
-        debris.position = Vector3(
-            -6.5 + float((i * 17) % 130) * 0.10,
-            -0.30 - float((i * 13) % 28) * 0.11,
-            -0.30
-        )
-        debris.material_override = _mat(Color("#6b5b4c"), 0.92)
-        cut.add_child(debris)
-
-    var labels := [
-        ["O", Vector3(-6.45, -0.08, -0.28)],
-        ["A", Vector3(-6.45, -0.52, -0.28)],
-        ["B", Vector3(-6.45, -1.20, -0.28)],
-        ["C", Vector3(-6.45, -2.12, -0.28)]
+    # Soil horizons are labels in the same physical scene, not a separate UI.
+    var horizons := [
+        ["O", Vector3(-5.15, -0.30, -5.35), "materia orgánica"],
+        ["A", Vector3(-5.15, -0.72, -5.35), "suelo superficial"],
+        ["B", Vector3(-5.15, -1.15, -5.35), "acumulación"],
+        ["C", Vector3(-5.15, -1.62, -5.35), "material parental"]
     ]
-    for item in labels:
+    for item in horizons:
         var label := Label3D.new()
         label.text = item[0]
         label.position = item[1]
-        label.font_size = 24
-        label.modulate = Color("#8bb89a")
-        label.outline_size = 8
-        label.outline_modulate = Color("#08110c")
-        cut.add_child(label)
+        label.font_size = 18
+        label.modulate = Color("#9fc5aa")
+        label.outline_size = 6
+        label.outline_modulate = Color("#07110d")
+        label.tooltip_text = item[2]
+        world_root.add_child(label)
 
     var title := Label3D.new()
-    title.text = "VIDA DEL SUELO"
-    title.position = Vector3(4.0, -0.02, -0.28)
-    title.font_size = 20
-    title.modulate = Color("#91cfa3")
-    title.outline_size = 7
-    title.outline_modulate = Color("#08110c")
-    cut.add_child(title)
+    title.text = "RED VIVA DEL SUELO"
+    title.position = Vector3(3.45, -0.18, -5.35)
+    title.font_size = 17
+    title.modulate = Color("#8fc5a2")
+    title.outline_size = 6
+    title.outline_modulate = Color("#07110d")
+    world_root.add_child(title)
+
+    var root_light := OmniLight3D.new()
+    root_light.position = Vector3(0.0, -0.55, -5.65)
+    root_light.light_color = Color("#62bd8c")
+    root_light.light_energy = 0.9
+    root_light.omni_range = 4.5
+    world_root.add_child(root_light)
 
 func _create_fireflies() -> void:
     for i in range(42):
@@ -701,143 +700,6 @@ func _add_glowing_segment(a: Vector3, b: Vector3, radius: float, color: Color) -
     world_root.add_child(segment)
     root_nodes.append(segment)
 
-
-func _create_root_showcase() -> void:
-    # Roots now cross the visible soil horizons instead of floating above them.
-    var paths := [
-        [Vector3(-0.10, 0.05, -6.45), Vector3(-0.80, -0.35, -5.45), Vector3(-2.35, -0.65, -6.72)],
-        [Vector3(0.10, 0.06, -6.45), Vector3(0.80, -0.38, -5.45), Vector3(2.35, -0.72, -6.72)],
-        [Vector3(-0.25, 0.00, -6.40), Vector3(-1.35, -0.90, -5.35), Vector3(-3.25, -1.35, -6.72)],
-        [Vector3(0.30, 0.00, -6.40), Vector3(1.35, -0.92, -5.35), Vector3(3.25, -1.42, -6.72)],
-        [Vector3(-0.80, -0.25, -6.20), Vector3(-1.55, -1.45, -5.30), Vector3(-2.15, -2.35, -6.72)],
-        [Vector3(0.80, -0.25, -6.20), Vector3(1.55, -1.45, -5.30), Vector3(2.15, -2.45, -6.72)],
-        [Vector3(0.00, -0.15, -6.35), Vector3(-0.20, -1.25, -5.30), Vector3(0.35, -2.75, -6.72)]
-    ]
-    for path in paths:
-        _add_glowing_segment(path[0], path[1], 0.075, Color("#9eea9a"))
-        _add_glowing_segment(path[1], path[2], 0.043, Color("#78c99b"))
-
-    for i in range(55):
-        var a := Vector3(
-            -3.7 + float((i * 17) % 74) * 0.10,
-            -0.48 - float((i * 13) % 25) * 0.10,
-            -5.00
-        )
-        var b := a + Vector3(
-            sin(i * 1.9) * (0.22 + float(i % 4) * 0.10),
-            -0.10 - float(i % 3) * 0.07,
-            0.02
-        )
-        _add_glowing_segment(a, b, 0.012 + float(i % 2) * 0.006, Color("#aeeaa9"))
-
-    for i in range(22):
-        var node := MeshInstance3D.new()
-        var nm := SphereMesh.new()
-        nm.radius = 0.025 + float(i % 3) * 0.014
-        nm.height = nm.radius * 2.0
-        node.mesh = nm
-        node.position = Vector3(
-            -3.0 + float((i * 11) % 57) * 0.105,
-            -0.40 - float((i * 7) % 25) * 0.10,
-            -6.69
-        )
-        node.material_override = _glow_mat(Color("#d8ffb9"), Color("#d9ffbd"), 2.4, 0.94)
-        world_root.add_child(node)
-        root_nodes.append(node)
-
-    var root_light := OmniLight3D.new()
-    root_light.position = Vector3(0, -0.45, -5.45)
-    root_light.light_color = Color("#75d99b")
-    root_light.light_energy = 3.4
-    root_light.omni_range = 6.5
-    world_root.add_child(root_light)
-
-func _create_soil_life() -> void:
-    # Worms, fungal fruiting bodies and microbial light clusters are placed
-    # inside the visible soil slice, close to roots rather than in empty space.
-    for i in range(15):
-        var worm := MeshInstance3D.new()
-        var wm := CapsuleMesh.new()
-        wm.radius = 0.035
-        wm.height = 0.24 + float(i % 3) * 0.08
-        worm.mesh = wm
-        worm.position = Vector3(
-            -5.6 + float((i * 13) % 108) * 0.105,
-            -0.45 - float((i * 7) % 18) * 0.11,
-            -6.62
-        )
-        worm.rotation_degrees = Vector3(0, i * 29.0, 70.0 + sin(i) * 18.0)
-        worm.material_override = _mat(Color("#87583f"), 0.88)
-        world_root.add_child(worm)
-
-    for i in range(11):
-        var stem := MeshInstance3D.new()
-        var sm := CylinderMesh.new()
-        sm.top_radius = 0.018
-        sm.bottom_radius = 0.035
-        sm.height = 0.16 + float(i % 3) * 0.05
-        stem.mesh = sm
-        stem.position = Vector3(-4.7 + i * 0.90, -0.22, -6.58)
-        stem.material_override = _mat(Color("#a99576"), 0.92)
-        world_root.add_child(stem)
-
-        var cap := MeshInstance3D.new()
-        var cm := SphereMesh.new()
-        cm.radius = 0.09 + float(i % 2) * 0.025
-        cm.height = 0.11
-        cap.mesh = cm
-        cap.position = stem.position + Vector3(0, sm.height * 0.55, 0)
-        cap.material_override = _glow_mat(Color("#527e5a"), Color("#72c987"), 0.65, 0.9)
-        world_root.add_child(cap)
-
-    # Mycelium: longer branching lines around the roots, visibly different
-    # from the root material so the symbiosis can be perceived.
-    for i in range(34):
-        var start := Vector3(
-            -3.8 + float((i * 19) % 70) * 0.10,
-            -0.58 - float((i * 11) % 24) * 0.10,
-            -6.56
-        )
-        var end := start + Vector3(
-            sin(i * 1.7) * (0.45 + float(i % 3) * 0.12),
-            -0.10 - float(i % 3) * 0.07,
-            0.02
-        )
-        _add_glowing_segment(start, end, 0.010, Color("#b8e6c8"))
-
-    # Microbial colonies: clusters, not a carpet of random dots.
-    for c in range(9):
-        var cx := -4.8 + float(c) * 1.15
-        var cy := -0.52 - float(c % 4) * 0.34
-        for j in range(10):
-            var micro := MeshInstance3D.new()
-            var mm := SphereMesh.new()
-            mm.radius = 0.008 + float(j % 3) * 0.004
-            mm.height = mm.radius * 2.0
-            micro.mesh = mm
-            micro.position = Vector3(
-                cx + sin(j * 1.7 + c) * 0.24,
-                cy + cos(j * 1.2 + c) * 0.18,
-                -6.46
-            )
-            micro.material_override = _glow_mat(
-                Color("#83dca4") if j % 3 else Color("#d7f6a5"),
-                Color("#a2efbb") if j % 3 else Color("#e5ffb5"),
-                1.2,
-                0.86
-            )
-            world_root.add_child(micro)
-
-    # A few visible motile microbes near the root tips.
-    for i in range(8):
-        var micro := MeshInstance3D.new()
-        var mm := SphereMesh.new()
-        mm.radius = 0.025
-        mm.height = 0.05
-        micro.mesh = mm
-        micro.position = Vector3(-2.8 + i * 0.75, -1.25 - sin(i) * 0.35, -6.40)
-        micro.material_override = _glow_mat(Color("#b5f0ff"), Color("#c8f7ff"), 2.0, 0.92)
-        world_root.add_child(micro)
 
 func _create_leaf_particles() -> void:
     for i in range(14):
