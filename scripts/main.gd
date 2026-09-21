@@ -79,7 +79,6 @@ func _build_world() -> void:
 
     _index_nature_assets()
     _create_ground()
-    _create_soil_layers()
     _create_distant_forest()
     _create_foreground_forest()
     _create_real_tree_grove()
@@ -91,7 +90,6 @@ func _build_world() -> void:
     _create_insect_swarm()
     _create_savia_hero()
     _create_fruit_cluster()
-    _create_root_network()
     _create_root_showcase()
     _create_leaf_particles()
     _create_bio_particles()
@@ -301,30 +299,6 @@ func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
     parent.add_child(root)
     root_nodes.append(root)
 
-func _create_water() -> void:
-    var river := MeshInstance3D.new()
-    var mesh := PlaneMesh.new()
-    mesh.size = Vector2(4.2, 70)
-    river.mesh = mesh
-    river.position = Vector3(6.8, -0.12, -11)
-    river.rotation_degrees.y = -5
-    river.material_override = _mat(Color("#1d6970"), 0.18)
-    world_root.add_child(river)
-
-    for i in range(10):
-        var reed := Node3D.new()
-        reed.position = Vector3(1.0 + float(i % 5) * 0.75, 0, -5.0 - float(i * 3))
-        world_root.add_child(reed)
-        for j in range(3):
-            var blade := MeshInstance3D.new()
-            var blade_mesh := BoxMesh.new()
-            blade_mesh.size = Vector3(0.035, 0.85 + j * 0.15, 0.07)
-            blade.mesh = blade_mesh
-            blade.position = Vector3((j - 1) * 0.08, 0.38, 0)
-            blade.rotation_degrees.z = -12 + j * 10
-            blade.material_override = _mat(Color("#537d5d"), 0.8)
-            reed.add_child(blade)
-
 func _create_distant_forest() -> void:
     for i in range(20):
         var x := -20.0 + float((i * 13) % 40)
@@ -400,68 +374,6 @@ func _create_real_tree_grove() -> void:
         )
         if tree:
             tree.rotation.y = float(i) * 0.8
-
-func _create_research_station() -> void:
-    var station := Node3D.new()
-    station.position = Vector3(-4.2, 0, 0.4)
-    world_root.add_child(station)
-
-    var table := MeshInstance3D.new()
-    var table_mesh := BoxMesh.new()
-    table_mesh.size = Vector3(3.0, 0.22, 1.25)
-    table.mesh = table_mesh
-    table.position.y = 1.25
-    table.material_override = _mat(Color("#594838"), 0.88)
-    station.add_child(table)
-
-    for x in [-1.2, 1.2]:
-        for z in [-0.42, 0.42]:
-            var leg := MeshInstance3D.new()
-            var leg_mesh := CylinderMesh.new()
-            leg_mesh.top_radius = 0.07
-            leg_mesh.bottom_radius = 0.09
-            leg_mesh.height = 1.25
-            leg.mesh = leg_mesh
-            leg.position = Vector3(x, 0.62, z)
-            leg.material_override = _mat(Color("#46372d"), 0.95)
-            station.add_child(leg)
-
-    var lamp := OmniLight3D.new()
-    lamp.position = Vector3(0, 2.0, 0)
-    lamp.light_color = Color("#d6e8ad")
-    lamp.light_energy = 1.2
-    lamp.omni_range = 5.5
-    station.add_child(lamp)
-
-    var jar := MeshInstance3D.new()
-    var jar_mesh := CylinderMesh.new()
-    jar_mesh.top_radius = 0.18
-    jar_mesh.bottom_radius = 0.18
-    jar_mesh.height = 0.48
-    jar.mesh = jar_mesh
-    jar.position = Vector3(-0.7, 1.58, 0)
-    jar.material_override = _mat(Color("#8eb9a1"), 0.18)
-    station.add_child(jar)
-
-    var microscope := Node3D.new()
-    microscope.position = Vector3(0.45, 1.4, 0)
-    station.add_child(microscope)
-    var base := MeshInstance3D.new()
-    var base_mesh := BoxMesh.new()
-    base_mesh.size = Vector3(0.65, 0.1, 0.42)
-    base.mesh = base_mesh
-    base.material_override = _mat(Color("#26372f"), 0.45)
-    microscope.add_child(base)
-    var scope := MeshInstance3D.new()
-    var scope_mesh := CylinderMesh.new()
-    scope_mesh.top_radius = 0.08
-    scope_mesh.bottom_radius = 0.11
-    scope_mesh.height = 0.7
-    scope.mesh = scope_mesh
-    scope.rotation_degrees.z = -22
-    scope.position = Vector3(0, 0.32, 0)
-    scope.material_override = _mat(Color("#8a9b8e"), 0.35)
-    microscope.add_child(scope)
 
 func _create_fireflies() -> void:
     for i in range(26):
