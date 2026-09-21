@@ -75,7 +75,7 @@ func _build_world() -> void:
     camera.fov = 46.0
     camera.current = true
     world_root.add_child(camera)
-    # Frame the forest and the underground cutaway together.
+    # Frame the forest and the living root zone together.
     camera.look_at(Vector3(0.0, -1.65, -5.4), Vector3.UP)
 
     _index_nature_assets()
@@ -367,8 +367,8 @@ func _create_living_soil_scene() -> void:
     # perception layer around it.
     var root_asset := _add_nature_asset(
         ["single_root_1k.gltf", "single_root.gltf"],
-        Vector3(0.0, -0.42, -6.15),
-        2.55
+        Vector3(0.0, -0.42, -7.18),
+        3.00
     )
     if root_asset:
         root_asset.rotation.y = PI
