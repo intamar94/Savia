@@ -88,6 +88,7 @@ func _build_world() -> void:
 	_create_central_tree()
 	_create_menu_habitat()
 	_create_living_soil_scene()
+	_create_savia_identity_ecosystem()
 	_create_fireflies()
 	_create_bio_particles()
 
@@ -203,6 +204,202 @@ func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: fl
 	world_root.add_child(node)
 	return node
 
+
+func _create_savia_identity_ecosystem() -> void:
+	# Identidad visual de SAVIA: una pequeña red viva donde cada elemento
+	# representa una relación del ecosistema, no una decoración aislada.
+	var identity_root := Node3D.new()
+	identity_root.name = "SAVIA_Ecosystem_Identity"
+	world_root.add_child(identity_root)
+
+	# Vegetación superficial: diferentes formas y alturas para comunicar
+	# diversidad vegetal desde el primer vistazo.
+	var plant_specs := [
+		[Vector3(-2.7, -0.05, -6.1), 0.72, Color("#477d46")],
+		[Vector3(-1.9, -0.05, -5.3), 0.48, Color("#6b9b4f")],
+		[Vector3(1.9, -0.05, -5.6), 0.62, Color("#3f7041")],
+		[Vector3(2.8, -0.05, -6.5), 0.84, Color("#719e50")],
+		[Vector3(-2.2, -0.05, -8.3), 0.56, Color("#4f8a50")],
+		[Vector3(2.2, -0.05, -8.6), 0.68, Color("#5f9149")]
+	]
+	for spec in plant_specs:
+		_create_identity_plant(identity_root, spec[0], spec[1], spec[2])
+
+	# Flores pequeñas: introducen polinización y reproducción sin convertir
+	# la escena en un jardín ornamental.
+	for i in range(7):
+		var angle := float(i) * TAU / 7.0
+		var pos := Vector3(cos(angle) * 3.0, 0.04, -7.0 + sin(angle) * 1.8)
+		_create_identity_flower(identity_root, pos, 0.55 + float(i % 2) * 0.12)
+
+	# Hongos alrededor de las raíces: hacen visible la conexión planta-suelo.
+	for i in range(9):
+		var angle := float(i) * TAU / 9.0
+		var radius := 1.8 + float(i % 3) * 0.55
+		var pos := Vector3(cos(angle) * radius, -0.02, -7.2 + sin(angle) * 1.55)
+		_create_identity_mushroom(identity_root, pos, 0.45 + float(i % 3) * 0.10)
+
+	# Red de raíces fina que conecta vegetación, árbol y zona subterránea.
+	var root_paths := [
+		[Vector3(-0.2, -0.20, -7.8), Vector3(-2.2, -0.58, -6.2)],
+		[Vector3(0.1, -0.22, -7.8), Vector3(2.3, -0.62, -6.0)],
+		[Vector3(-0.1, -0.30, -7.9), Vector3(-2.0, -0.88, -8.5)],
+		[Vector3(0.1, -0.30, -7.9), Vector3(2.1, -0.92, -8.7)],
+		[Vector3(-2.2, -0.58, -6.2), Vector3(-3.0, -1.10, -6.7)],
+		[Vector3(2.3, -0.62, -6.0), Vector3(3.1, -1.05, -6.8)]
+	]
+	for path_points in root_paths:
+		_add_profile_root(identity_root, path_points[0], path_points[1])
+
+	# Assets reales ya incluidos en el repositorio: insectos y microorganismos.
+	blender_asset_loader = BlenderAssetLoader.new()
+	blender_asset_loader.name = "BlenderNatureAssets"
+	identity_root.add_child(blender_asset_loader)
+	blender_asset_loader.load_all_assets()
+
+	var insects_asset := blender_asset_loader.get_asset_copy("insects")
+	if insects_asset:
+		insects_asset.position = Vector3(1.0, 0.85, -6.4)
+		insects_asset.scale = Vector3.ONE * 0.65
+		identity_root.add_child(insects_asset)
+
+	var insects_asset_2 := blender_asset_loader.get_asset_copy("insects")
+	if insects_asset_2:
+		insects_asset_2.position = Vector3(-2.0, 1.15, -7.1)
+		insects_asset_2.scale = Vector3.ONE * 0.48
+		identity_root.add_child(insects_asset_2)
+
+	var microbes_asset := blender_asset_loader.get_asset_copy("microorganisms")
+	if microbes_asset:
+		microbes_asset.position = Vector3(0.0, -1.15, -7.3)
+		microbes_asset.scale = Vector3.ONE * 0.38
+		identity_root.add_child(microbes_asset)
+
+	var roots_asset := blender_asset_loader.get_asset_copy("roots")
+	if roots_asset:
+		roots_asset.position = Vector3(0.0, -1.35, -7.4)
+		roots_asset.scale = Vector3.ONE * 0.52
+		identity_root.add_child(roots_asset)
+
+	# Pequeña corriente de agua: el agua conecta superficie, suelo y vida.
+	for i in range(9):
+		var drop := MeshInstance3D.new()
+		var dm := SphereMesh.new()
+		dm.radius = 0.035
+		dm.height = 0.07
+		drop.mesh = dm
+		drop.position = Vector3(-3.8 + i * 0.42, -0.10, -9.0 + sin(i * 0.7) * 0.16)
+		drop.material_override = _glow_mat(Color("#6ba9b4"), Color("#9ddfe5"), 0.25, 0.58)
+		identity_root.add_child(drop)
+
+func _create_identity_plant(parent: Node3D, pos: Vector3, scale_factor: float, leaf_color: Color) -> void:
+	var plant := Node3D.new()
+	plant.position = pos
+	parent.add_child(plant)
+
+	var stem := MeshInstance3D.new()
+	var stem_mesh := CylinderMesh.new()
+	stem_mesh.top_radius = 0.035 * scale_factor
+	stem_mesh.bottom_radius = 0.06 * scale_factor
+	stem_mesh.height = 0.75 * scale_factor
+	stem.mesh = stem_mesh
+	stem.position.y = 0.38 * scale_factor
+	stem.material_override = _mat(Color("#5a713d"), 0.88)
+	plant.add_child(stem)
+
+	for side in [-1.0, 1.0]:
+		var leaf := MeshInstance3D.new()
+		var leaf_mesh := SphereMesh.new()
+		leaf_mesh.radius = 0.20 * scale_factor
+		leaf_mesh.height = 0.42 * scale_factor
+		leaf.mesh = leaf_mesh
+		leaf.scale = Vector3(1.7, 0.55, 0.9)
+		leaf.position = Vector3(0.13 * side, 0.55 * scale_factor, 0.02)
+		leaf.rotation.z = side * 0.45
+		leaf.material_override = _mat(leaf_color, 0.82)
+		plant.add_child(leaf)
+
+	var root_marker := MeshInstance3D.new()
+	var root_mesh := CylinderMesh.new()
+	root_mesh.top_radius = 0.018 * scale_factor
+	root_mesh.bottom_radius = 0.045 * scale_factor
+	root_mesh.height = 0.38 * scale_factor
+	root_marker.mesh = root_mesh
+	root_marker.position.y = -0.18 * scale_factor
+	root_marker.material_override = _mat(Color("#6f4d2c"), 0.95)
+	plant.add_child(root_marker)
+
+func _create_identity_flower(parent: Node3D, pos: Vector3, scale_factor: float) -> void:
+	var flower := Node3D.new()
+	flower.position = pos
+	parent.add_child(flower)
+
+	var stem := MeshInstance3D.new()
+	var sm := CylinderMesh.new()
+	sm.top_radius = 0.018 * scale_factor
+	sm.bottom_radius = 0.028 * scale_factor
+	sm.height = 0.34 * scale_factor
+	stem.mesh = sm
+	stem.position.y = 0.17 * scale_factor
+	stem.material_override = _mat(Color("#527346"), 0.9)
+	flower.add_child(stem)
+
+	var center := MeshInstance3D.new()
+	var cm := SphereMesh.new()
+	cm.radius = 0.055 * scale_factor
+	cm.height = 0.11 * scale_factor
+	center.mesh = cm
+	center.position.y = 0.37 * scale_factor
+	center.material_override = _mat(Color("#d8bb62"), 0.75)
+	flower.add_child(center)
+
+	for i in range(5):
+		var petal := MeshInstance3D.new()
+		var pm := SphereMesh.new()
+		pm.radius = 0.065 * scale_factor
+		pm.height = 0.12 * scale_factor
+		petal.mesh = pm
+		var angle := float(i) * TAU / 5.0
+		petal.position = Vector3(cos(angle) * 0.09 * scale_factor, 0.37 * scale_factor, sin(angle) * 0.09 * scale_factor)
+		petal.scale = Vector3(1.15, 0.55, 0.8)
+		petal.material_override = _mat(Color("#b8d88d"), 0.78)
+		flower.add_child(petal)
+
+func _create_identity_mushroom(parent: Node3D, pos: Vector3, scale_factor: float) -> void:
+	var mushroom := Node3D.new()
+	mushroom.position = pos
+	parent.add_child(mushroom)
+
+	var stem := MeshInstance3D.new()
+	var sm := CylinderMesh.new()
+	sm.top_radius = 0.045 * scale_factor
+	sm.bottom_radius = 0.07 * scale_factor
+	sm.height = 0.24 * scale_factor
+	stem.mesh = sm
+	stem.position.y = 0.12 * scale_factor
+	stem.material_override = _mat(Color("#d6c7a3"), 0.92)
+	mushroom.add_child(stem)
+
+	var cap := MeshInstance3D.new()
+	var cap_mesh := SphereMesh.new()
+	cap_mesh.radius = 0.17 * scale_factor
+	cap_mesh.height = 0.16 * scale_factor
+	cap.mesh = cap_mesh
+	cap.scale = Vector3(1.25, 0.55, 1.25)
+	cap.position.y = 0.28 * scale_factor
+	cap.material_override = _mat(Color("#8d684d"), 0.82)
+	mushroom.add_child(cap)
+
+	for i in range(3):
+		var dot := MeshInstance3D.new()
+		var dm := SphereMesh.new()
+		dm.radius = 0.018 * scale_factor
+		dm.height = 0.036 * scale_factor
+		dot.mesh = dm
+		var angle := float(i) * TAU / 3.0
+		dot.position = Vector3(cos(angle) * 0.11 * scale_factor, 0.31 * scale_factor, sin(angle) * 0.11 * scale_factor)
+		dot.material_override = _glow_mat(Color("#d6d0a3"), Color("#f1efc7"), 0.35, 0.45)
+		mushroom.add_child(dot)
 
 func _create_ground() -> void:
 	# Dark forest floor. The visible soil section is generated separately,
