@@ -73,6 +73,7 @@ func _build_world() -> void:
     camera = Camera3D.new()
     camera.position = Vector3(7.0, 4.3, 11.5)
     camera.fov = 48.0
+    camera.current = true
     world_root.add_child(camera)
     camera.look_at(Vector3(0.4, 1.0, -7.2), Vector3.UP)
 
@@ -219,8 +220,9 @@ func _create_ground() -> void:
     for i in range(8):
         var patch := MeshInstance3D.new()
         var patch_mesh := CylinderMesh.new()
-        patch_mesh.top_radius = 0.45 + float(i % 3) * 0.12
-        patch_mesh.bottom_radius = patch_mesh.top_radius * 1.1
+        var patch_radius := 0.45 + float(i % 3) * 0.12
+        patch_mesh.top_radius = patch_radius
+        patch_mesh.bottom_radius = patch_radius * 1.1
         patch_mesh.height = 0.025
         patch.mesh = patch_mesh
         patch.position = Vector3(-12.0 + float((i * 7) % 24), -0.40, -3.0 - float((i * 11) % 22))
@@ -542,8 +544,7 @@ func _create_mushroom_assets() -> void:
             mushroom.rotation.y = float(i) * 1.7
 
 func _create_insect_swarm() -> void:
-    # Insects are readable silhouettes, not floating circles: body + wings +
-    # a small biological signal.
+    # Insects are readable silhouettes: body + wings + a small biological signal.
     for i in range(14):
         var insect := Node3D.new()
         insect.position = Vector3(
@@ -556,8 +557,9 @@ func _create_insect_swarm() -> void:
         wildlife.append(insect)
 
         var body := MeshInstance3D.new()
-        var body_mesh := CapsuleMesh.new()
-        body_mesh.radius = 0.035
+        var body_mesh := CylinderMesh.new()
+        body_mesh.top_radius = 0.035
+        body_mesh.bottom_radius = 0.045
         body_mesh.height = 0.20
         body.mesh = body_mesh
         body.rotation_degrees.z = 90
