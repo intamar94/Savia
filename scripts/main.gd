@@ -71,11 +71,11 @@ func _build_world() -> void:
     world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(7.0, 4.3, 11.5)
-    camera.fov = 48.0
+    camera.position = Vector3(5.8, 3.1, 9.4)
+    camera.fov = 46.0
     camera.current = true
     world_root.add_child(camera)
-    camera.look_at(Vector3(0.4, 1.0, -7.2), Vector3.UP)
+    camera.look_at(Vector3(0.4, 0.35, -6.2), Vector3.UP)
 
     _index_nature_assets()
     _create_ground()
@@ -202,28 +202,41 @@ func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: fl
     world_root.add_child(node)
     return node
 
-func _create_ground() -> void:
-    # Keep the ground visually clean: the menu should communicate life,
-    # not look like a field of repeated rocks.
-    var ground := MeshInstance3D.new()
-    var mesh := PlaneMesh.new()
-    mesh.size = Vector2(70, 70)
-    ground.mesh = mesh
-    ground.position = Vector3(0, -0.42, -10)
-    ground.material_override = _mat(Color("#356b3d"), 0.96)
-    world_root.add_child(ground)
 
-    # Organic patches add variation without competing with roots and plants.
-    for i in range(8):
+func _create_ground() -> void:
+    # The ground is built around a shallow natural cutaway. The soil view is
+    # part of the same terrain, not a floating laboratory panel.
+    var strips := [
+        [Vector3(-10.5, -0.42, -11.0), Vector2(21.0, 28.0)],
+        [Vector3(16.5, -0.42, -11.0), Vector2(23.0, 28.0)],
+        [Vector3(3.0, -0.42, 2.0), Vector2(9.0, 10.0)],
+        [Vector3(3.0, -0.42, -21.0), Vector2(9.0, 18.0)]
+    ]
+    for data in strips:
+        var ground := MeshInstance3D.new()
+        var mesh := PlaneMesh.new()
+        mesh.size = data[1]
+        ground.mesh = mesh
+        ground.position = data[0]
+        ground.material_override = _mat(Color("#4f914d"), 0.98)
+        world_root.add_child(ground)
+
+    # Soft patches make the terrain read as a living forest floor.
+    var patch_data := [
+        [Vector3(-5.5, -0.39, -4.2), 1.8],
+        [Vector3(6.5, -0.39, -4.0), 1.5],
+        [Vector3(-8.0, -0.39, -9.0), 2.1],
+        [Vector3(9.0, -0.39, -10.5), 2.0]
+    ]
+    for data in patch_data:
         var patch := MeshInstance3D.new()
         var patch_mesh := CylinderMesh.new()
-        var patch_radius := 0.45 + float(i % 3) * 0.12
-        patch_mesh.top_radius = patch_radius
-        patch_mesh.bottom_radius = patch_radius * 1.1
-        patch_mesh.height = 0.025
+        patch_mesh.top_radius = data[1]
+        patch_mesh.bottom_radius = data[1] * 1.12
+        patch_mesh.height = 0.035
         patch.mesh = patch_mesh
-        patch.position = Vector3(-12.0 + float((i * 7) % 24), -0.40, -3.0 - float((i * 11) % 22))
-        patch.material_override = _mat(Color("#315b38"), 0.98)
+        patch.position = data[0]
+        patch.material_override = _mat(Color("#3f7d42"), 0.98)
         world_root.add_child(patch)
 
 func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
@@ -241,19 +254,27 @@ func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
     parent.add_child(root)
     root_nodes.append(root)
 
+
 func _create_distant_forest() -> void:
-    for i in range(20):
-        var x := -20.0 + float((i * 13) % 40)
-        var z := -18.0 - float((i * 7) % 25)
-        _create_tree(Vector3(x, 0, z), 0.65 + float(i % 5) * 0.08, true)
+    # Background vegetation frames the ecosystem without competing with the
+    # protagonist plant and its visible underground system.
+    var positions := [
+        Vector3(-12.0, 0, -13.0), Vector3(-8.0, 0, -16.0),
+        Vector3(8.0, 0, -14.0), Vector3(12.0, 0, -17.0),
+        Vector3(-15.0, 0, -20.0), Vector3(15.0, 0, -21.0)
+    ]
+    for i in range(positions.size()):
+        _create_tree(positions[i], 0.78 + float(i % 2) * 0.12, true)
+
 
 func _create_foreground_forest() -> void:
-    for i in range(9):
-        var x := -17.0 + float((i * 19) % 32)
-        var z := -1.0 - float((i * 29) % 23)
-        if abs(x - 4.5) < 4.0:
-            x -= 6.0
-        _create_tree(Vector3(x, 0, z), 0.82 + float(i % 4) * 0.12, false)
+    var positions := [
+        Vector3(-9.5, 0, -5.5), Vector3(-6.8, 0, -8.5),
+        Vector3(7.0, 0, -7.0), Vector3(9.5, 0, -10.0),
+        Vector3(-10.5, 0, -13.5), Vector3(10.8, 0, -15.0)
+    ]
+    for i in range(positions.size()):
+        _create_tree(positions[i], 0.86 + float(i % 3) * 0.12, false)
 
 func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
     # Prefer real Quaternius vegetation. Procedural geometry remains only as a
@@ -298,24 +319,24 @@ func _create_tree(pos: Vector3, scale_factor: float, distant: bool) -> void:
         crown.material_override = _mat(Color("#31563b") if not distant else Color("#274633"), 0.92)
         tree.add_child(crown)
 
+
 func _create_real_tree_grove() -> void:
-    # Force several real tree variants into the hero background. This is the
-    # visual proof that the Quaternius pipeline is active.
+    # A small grove surrounds the protagonist instead of a grid of isolated
+    # decorative objects.
     var positions := [
-        Vector3(-10.5, 0.0, -10.5),
-        Vector3(-7.5, 0.0, -13.0),
-        Vector3(7.8, 0.0, -12.5),
-        Vector3(11.0, 0.0, -15.0),
-        Vector3(-13.0, 0.0, -17.0)
+        Vector3(-7.8, 0.0, -9.0),
+        Vector3(7.4, 0.0, -9.5),
+        Vector3(-11.5, 0.0, -15.0),
+        Vector3(11.5, 0.0, -16.0)
     ]
     for i in range(positions.size()):
         var tree := _add_nature_asset(
-            ["CommonTree_%d.gltf" % (i + 1), "NormalTree_%d.gltf" % (i + 1), "Tree_%d.gltf" % (i + 1), "DeadTree_%d.gltf" % (i + 1)],
+            ["CommonTree_%d.gltf" % (i + 1), "DeadTree_%d.gltf" % (i + 1), "Tree_%d.gltf" % (i + 1)],
             positions[i],
-            0.75 + float(i % 3) * 0.12
+            0.78 + float(i % 2) * 0.10
         )
         if tree:
-            tree.rotation.y = float(i) * 0.8
+            tree.rotation.y = float(i) * 0.9
 
 func _create_fireflies() -> void:
     for i in range(26):
@@ -375,145 +396,160 @@ func _create_fern_beds() -> void:
             fern.add_child(leaf)
             grass_blades.append(leaf)
 
+
 func _create_flower_beds() -> void:
+    # Flowers cluster around the protagonist, giving the insects a reason to
+    # be here instead of looking like unrelated decorations.
     var spots := [
-        Vector3(-7.5, 0, -7.5), Vector3(-5.8, 0, -10.0),
-        Vector3(5.5, 0, -9.0), Vector3(8.0, 0, -11.0),
-        Vector3(-10.0, 0, -12.0), Vector3(10.5, 0, -17.0)
+        Vector3(-0.9, -0.05, -5.0),
+        Vector3(-1.45, -0.05, -5.7),
+        Vector3(2.0, -0.05, -5.15),
+        Vector3(2.25, -0.05, -5.9)
     ]
     for i in range(spots.size()):
-        var flower := _add_nature_asset(["Flower_%d_Single.gltf" % (3 + i % 2), "Flower_3_Single.gltf", "Flower_4_Single.gltf"], spots[i], 0.08 + float(i % 2) * 0.025)
+        var flower := _add_nature_asset(
+            ["Flower_%d_Single.gltf" % (3 + i % 2), "Flower_3_Single.gltf", "Flower_4_Single.gltf"],
+            spots[i],
+            0.11
+        )
         if flower:
-            flower.rotation.y = float(i) * 1.4
+            flower.rotation.y = float(i) * 1.7
+
 
 func _create_mushroom_assets() -> void:
+    # Fungi stay at the moist edge of the root zone.
     var spots := [
-        Vector3(-9.0, 0, -5.0), Vector3(-8.4, 0, -5.5),
-        Vector3(6.5, 0, -7.5), Vector3(7.1, 0, -7.9)
+        Vector3(-2.5, -0.05, -6.2),
+        Vector3(-2.1, -0.05, -6.6),
+        Vector3(2.8, -0.05, -6.4)
     ]
     for i in range(spots.size()):
-        var mushroom := _add_nature_asset(["Mushroom_Common.gltf", "Mushroom_1.gltf", "Mushroom_2.gltf"], spots[i], 0.24 + float(i % 2) * 0.06)
+        var mushroom := _add_nature_asset(
+            ["Mushroom_Common.gltf", "Mushroom_1.gltf", "Mushroom_2.gltf"],
+            spots[i],
+            0.20 + float(i % 2) * 0.04
+        )
         if mushroom:
             mushroom.rotation.y = float(i) * 1.7
 
+
 func _create_insect_swarm() -> void:
-    # Readable pollinators around the hero plant.
+    # Pollinators follow the flower cluster around the hero plant.
     var positions := [
-        Vector3(0.1, 1.55, -5.0), Vector3(1.4, 1.35, -5.3),
-        Vector3(-0.7, 0.85, -5.6), Vector3(1.9, 0.95, -5.9),
-        Vector3(-1.8, 0.55, -6.1), Vector3(2.6, 0.75, -6.4)
+        Vector3(-0.85, 1.15, -5.0), Vector3(-0.20, 1.45, -5.55),
+        Vector3(1.75, 1.30, -5.10), Vector3(2.05, 0.92, -5.75)
     ]
     for i in range(positions.size()):
         var insect := Node3D.new()
         insect.position = positions[i]
-        insect.scale = Vector3.ONE * (1.6 + float(i % 2) * 0.25)
+        insect.scale = Vector3.ONE * 1.65
         world_root.add_child(insect)
         wildlife.append(insect)
+
         var body := MeshInstance3D.new()
         var body_mesh := CapsuleMesh.new()
         body_mesh.radius = 0.045
         body_mesh.height = 0.28
         body.mesh = body_mesh
         body.rotation_degrees.z = 90
-        body.material_override = _mat(Color("#342b22"), 0.7)
+        body.material_override = _mat(Color("#2f251c"), 0.62)
         insect.add_child(body)
+
         for side in [-1.0, 1.0]:
             var wing := MeshInstance3D.new()
             var wing_mesh := QuadMesh.new()
-            wing_mesh.size = Vector2(0.22, 0.14)
+            wing_mesh.size = Vector2(0.20, 0.13)
             wing.mesh = wing_mesh
-            wing.position = Vector3(0, 0.02, side * 0.11)
-            wing.rotation_degrees.y = 22.0 * side
+            wing.position = Vector3(0, 0.02, side * 0.10)
+            wing.rotation_degrees.y = 24.0 * side
             wing.material_override = _glow_mat(
                 Color("#b9e7d0") if i % 2 == 0 else Color("#f0c86a"),
                 Color("#d1ffe5") if i % 2 == 0 else Color("#ffe19a"),
-                1.0, 0.82
+                1.0, 0.84
             )
             insect.add_child(wing)
+
         var eye := MeshInstance3D.new()
         var eye_mesh := SphereMesh.new()
-        eye_mesh.radius = 0.025
-        eye_mesh.height = 0.05
+        eye_mesh.radius = 0.024
+        eye_mesh.height = 0.048
         eye.mesh = eye_mesh
         eye.position = Vector3(0.16, 0.0, 0)
-        eye.material_override = _glow_mat(Color("#dfff8c"), Color("#efffb5"), 1.4, 0.9)
+        eye.material_override = _glow_mat(Color("#e8ff9c"), Color("#f5ffbd"), 1.5, 0.9)
         insect.add_child(eye)
 
+
 func _create_savia_hero() -> void:
-    # Hero plant: a real pack asset when available, with a subtle luminous
-    # scientific treatment that visually connects leaf -> stem -> soil.
-    # Compact botanical hero: avoid the oversized flower silhouette.
-    var hero := _add_nature_asset(["Fern_1.gltf", "Plant_7.gltf", "Plant_6.gltf", "Bush_Common.gltf"], Vector3(0.8, -0.05, -5.2), 0.92)
+    # One protagonist plant anchors the whole composition.
+    var hero := _add_nature_asset(
+        ["Fern_1.gltf", "Plant_7.gltf", "Plant_6.gltf", "Bush_Common.gltf"],
+        Vector3(0.45, -0.05, -5.25),
+        0.78
+    )
     if not hero:
         var stem := MeshInstance3D.new()
         var stem_mesh := CylinderMesh.new()
-        stem_mesh.top_radius = 0.07
-        stem_mesh.bottom_radius = 0.12
-        stem_mesh.height = 2.05
+        stem_mesh.top_radius = 0.065
+        stem_mesh.bottom_radius = 0.11
+        stem_mesh.height = 2.15
         stem.mesh = stem_mesh
-        stem.position = Vector3(1.2, 1.1, -5.2)
-        stem.material_override = _mat(Color("#6f9d58"), 0.72)
+        stem.position = Vector3(0.45, 1.02, -5.25)
+        stem.material_override = _mat(Color("#5c984b"), 0.72)
         world_root.add_child(stem)
-        for i in range(7):
+        for i in range(8):
             var leaf := MeshInstance3D.new()
             var leaf_mesh := QuadMesh.new()
-            leaf_mesh.size = Vector2(0.62, 0.32)
+            leaf_mesh.size = Vector2(0.62, 0.30)
             leaf.mesh = leaf_mesh
-            leaf.position = Vector3(1.2 + sin(i * 0.9) * 0.45, 0.72 + i * 0.23, -5.2 + cos(i * 0.8) * 0.22)
-            leaf.rotation_degrees = Vector3(-12 + i * 3, -24 + i * 28, -22 + i * 7)
-            leaf.material_override = _glow_mat(Color("#7fbe69"), Color("#72d66f"), 1.15, 0.76)
+            leaf.position = Vector3(
+                0.45 + sin(i * 0.9) * 0.42,
+                0.65 + i * 0.22,
+                -5.25 + cos(i * 0.8) * 0.22
+            )
+            leaf.rotation_degrees = Vector3(-10 + i * 3, -24 + i * 28, -20 + i * 7)
+            leaf.material_override = _glow_mat(Color("#74b85e"), Color("#7bd66d"), 0.9, 0.82)
             world_root.add_child(leaf)
 
-    # A small warm source at the plant makes the biological path readable.
     var plant_light := OmniLight3D.new()
-    plant_light.position = Vector3(1.2, 1.15, -5.2)
-    plant_light.light_color = Color("#c8ff9a")
-    plant_light.light_energy = 1.4
-    plant_light.omni_range = 4.0
+    plant_light.position = Vector3(0.45, 1.0, -5.25)
+    plant_light.light_color = Color("#bfff8d")
+    plant_light.light_energy = 0.75
+    plant_light.omni_range = 3.5
     world_root.add_child(plant_light)
 
+
 func _create_fruit_cluster() -> void:
-    # A readable fruiting stage connects flower -> fruit -> seed.
+    # Fruits hang from the same hero plant; they are deliberately small so
+    # they read as part of the plant rather than floating spheres.
     var spots := [
-        Vector3(0.42, 1.05, -5.30),
-        Vector3(1.12, 1.34, -5.22),
-        Vector3(0.30, 1.52, -5.10)
+        Vector3(0.00, 1.25, -5.35),
+        Vector3(0.78, 1.48, -5.22),
+        Vector3(-0.15, 1.70, -5.10)
     ]
     for i in range(spots.size()):
         var fruit := Node3D.new()
         fruit.position = spots[i]
-        fruit.scale = Vector3.ONE * (0.14 + float(i % 2) * 0.025)
+        fruit.scale = Vector3.ONE * 0.12
         world_root.add_child(fruit)
 
         var body := MeshInstance3D.new()
         var body_mesh := SphereMesh.new()
         body_mesh.radius = 0.9
-        body_mesh.height = 1.25
+        body_mesh.height = 1.15
         body.mesh = body_mesh
-        body.scale = Vector3(0.82, 1.0, 0.82)
-        body.material_override = _mat(Color("#c85a4b") if i != 1 else Color("#d89a45"), 0.72)
+        body.material_override = _mat(Color("#d46a43") if i != 1 else Color("#e2a044"), 0.70)
         fruit.add_child(body)
 
         var stem := MeshInstance3D.new()
         var stem_mesh := CylinderMesh.new()
-        stem_mesh.top_radius = 0.025
-        stem_mesh.bottom_radius = 0.035
-        stem_mesh.height = 0.34
+        stem_mesh.top_radius = 0.02
+        stem_mesh.bottom_radius = 0.03
+        stem_mesh.height = 0.30
         stem.mesh = stem_mesh
-        stem.position.y = 0.56
-        stem.rotation_degrees.z = -10
-        stem.material_override = _mat(Color("#4d7c3f"), 0.82)
+        stem.position.y = 0.55
+        stem.rotation_degrees.z = -12
+        stem.material_override = _mat(Color("#4d813f"), 0.82)
         fruit.add_child(stem)
-
-        var fruit_signal := MeshInstance3D.new()
-        var signal_mesh := SphereMesh.new()
-        signal_mesh.radius = 0.045
-        signal_mesh.height = 0.09
-        fruit_signal.mesh = signal_mesh
-        fruit_signal.position = Vector3(0, 0.02, 0.78)
-        fruit_signal.material_override = _glow_mat(Color("#ffbf65"), Color("#ffd68a"), 1.8, 0.8)
-        fruit.add_child(fruit_signal)
-        light_particles.append(fruit_signal)
 
 func _create_bio_particles() -> void:
     # Pollen, spores, moisture and fluorescence-like observation points.
@@ -567,54 +603,90 @@ func _add_glowing_segment(a: Vector3, b: Vector3, radius: float, color: Color) -
     world_root.add_child(segment)
     root_nodes.append(segment)
 
+
 func _create_root_showcase() -> void:
-    # A readable living cross-section: soil horizons, roots and micro-life.
+    # Natural cutaway: the player is looking into the same ground where the
+    # protagonist grows. No laboratory wall, no floating sample.
     var chamber := Node3D.new()
-    chamber.name = "VisibleRootWindow"
-    chamber.position = Vector3(2.7, 0.95, -6.9)
+    chamber.name = "LivingSoilCutaway"
+    chamber.position = Vector3(0.8, -0.28, -7.15)
     world_root.add_child(chamber)
+
+    # Back of the shallow earth bank.
     var back := MeshInstance3D.new()
     var back_mesh := BoxMesh.new()
-    back_mesh.size = Vector3(5.8, 3.1, 0.18)
+    back_mesh.size = Vector3(6.8, 2.55, 0.38)
     back.mesh = back_mesh
-    back.position.z = 0.12
-    back.material_override = _mat(Color("#4b2f22"), 0.82)
+    back.position = Vector3(0, -0.65, -0.02)
+    back.material_override = _mat(Color("#5f422e"), 0.96)
     chamber.add_child(back)
+
+    # Five real soil horizons, exposed by the cut.
     var bands := [
-        [0.42, 0.38, Color("#805332")],
-        [-0.05, 0.48, Color("#96633a")],
-        [-0.53, 0.52, Color("#ad7947")],
-        [-1.05, 0.56, Color("#8f6a4b")],
-        [-1.61, 0.54, Color("#66706a")]
+        [0.40, 0.34, Color("#6e4b31")],
+        [0.00, 0.46, Color("#765034")],
+        [-0.48, 0.48, Color("#875c3c")],
+        [-1.02, 0.56, Color("#78634a")],
+        [-1.58, 0.56, Color("#59615b")]
     ]
-    for b in bands:
+    for data in bands:
         var soil := MeshInstance3D.new()
         var sm := BoxMesh.new()
-        sm.size = Vector3(5.65, b[1], 0.16)
+        sm.size = Vector3(6.55, data[1], 0.42)
         soil.mesh = sm
-        soil.position = Vector3(0, b[0], 0.0)
-        soil.material_override = _mat(b[2], 0.9)
+        soil.position = Vector3(0, data[0], 0.20)
+        soil.material_override = _mat(data[2], 0.94)
         chamber.add_child(soil)
+
+    # A dark organic top edge makes the plant/soil transition continuous.
+    var litter := MeshInstance3D.new()
+    var litter_mesh := BoxMesh.new()
+    litter_mesh.size = Vector3(6.6, 0.10, 0.55)
+    litter.mesh = litter_mesh
+    litter.position = Vector3(0, 0.56, 0.12)
+    litter.material_override = _mat(Color("#3d5b34"), 0.98)
+    chamber.add_child(litter)
+
+    # Main roots descend directly from the hero plant's position.
     var roots := [
-        [Vector3(-0.2, 1.05, -0.10), Vector3(-0.6, 0.35, -0.10)],
-        [Vector3(-0.6, 0.35, -0.10), Vector3(-1.45, -0.10, -0.10)],
-        [Vector3(-0.6, 0.35, -0.10), Vector3(0.2, -0.28, -0.10)],
-        [Vector3(0.2, -0.28, -0.10), Vector3(1.35, -0.72, -0.10)],
-        [Vector3(0.2, -0.28, -0.10), Vector3(-0.4, -1.15, -0.10)],
-        [Vector3(1.35, -0.72, -0.10), Vector3(2.15, -1.20, -0.10)],
-        [Vector3(-1.45, -0.10, -0.10), Vector3(-2.15, -0.55, -0.10)]
+        [Vector3(-0.35, 0.62, 0.00), Vector3(-0.65, 0.12, 0.00)],
+        [Vector3(-0.65, 0.12, 0.00), Vector3(-1.55, -0.18, 0.00)],
+        [Vector3(-0.65, 0.12, 0.00), Vector3(0.10, -0.38, 0.00)],
+        [Vector3(0.10, -0.38, 0.00), Vector3(1.20, -0.78, 0.00)],
+        [Vector3(0.10, -0.38, 0.00), Vector3(-0.35, -1.08, 0.00)],
+        [Vector3(1.20, -0.78, 0.00), Vector3(2.10, -1.28, 0.00)],
+        [Vector3(-1.55, -0.18, 0.00), Vector3(-2.30, -0.56, 0.00)]
     ]
     for pair in roots:
         _add_profile_root(chamber, pair[0], pair[1])
-    for i in range(22):
+
+    # Fine roots and mycorrhizal activity are concentrated around the main roots.
+    for i in range(26):
         var node := MeshInstance3D.new()
         var nm := SphereMesh.new()
-        nm.radius = 0.018 + float(i % 2) * 0.012
+        nm.radius = 0.012 + float(i % 3) * 0.006
         nm.height = nm.radius * 2.0
         node.mesh = nm
-        node.position = Vector3(-2.5 + float((i * 19) % 50) * 0.10, -0.05 - float((i * 13) % 15) * 0.075, -0.22)
-        node.material_override = _glow_mat(Color("#7be0a8") if i % 2 == 0 else Color("#a98cff"), Color("#a0ffc4") if i % 2 == 0 else Color("#c0aaff"), 1.8, 0.9)
+        var root_x := -2.4 + float((i * 17) % 48) * 0.10
+        var root_y := -0.05 - float((i * 13) % 15) * 0.085
+        node.position = Vector3(root_x, root_y, 0.02)
+        node.material_override = _glow_mat(
+            Color("#72dca0") if i % 2 == 0 else Color("#a991ff"),
+            Color("#9bffc0") if i % 2 == 0 else Color("#c4b4ff"),
+            1.5, 0.86
+        )
         chamber.add_child(node)
+
+    # Moss and grass at the exposed rim visually connect the cutaway to the forest.
+    for i in range(10):
+        var rim := MeshInstance3D.new()
+        var rim_mesh := BoxMesh.new()
+        rim_mesh.size = Vector3(0.18, 0.08 + float(i % 2) * 0.04, 0.35)
+        rim.mesh = rim_mesh
+        rim.position = Vector3(-3.0 + i * 0.65, 0.67, 0.08)
+        rim.rotation_degrees.y = -15 + i * 5
+        rim.material_override = _mat(Color("#5b9a4c"), 0.92)
+        chamber.add_child(rim)
 
 func _create_leaf_particles() -> void:
     for i in range(14):
@@ -642,9 +714,9 @@ func _glow_mat(color: Color, emission: Color, emission_energy: float, alpha: flo
 
 func _animate_world() -> void:
     if camera:
-        var target := Vector3(0.2 + sin(time * 0.045) * 1.1, 1.45 + sin(time * 0.17) * 0.08, -7.8)
-        camera.position.x = 7.6 + sin(time * 0.035) * 1.2
-        camera.position.y = 4.7 + sin(time * 0.12) * 0.1
+        var target := Vector3(0.45 + sin(time * 0.045) * 0.45, 0.55 + sin(time * 0.17) * 0.05, -6.4)
+        camera.position.x = 5.8 + sin(time * 0.035) * 0.55
+        camera.position.y = 3.15 + sin(time * 0.12) * 0.06
         camera.look_at(target, Vector3.UP)
 
     for i in range(fireflies.size()):
