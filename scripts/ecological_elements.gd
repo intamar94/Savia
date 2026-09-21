@@ -204,7 +204,7 @@ func create_grass_patch(position: Vector3, width: float = 2.0, length: float = 2
 	
 	for x in range(int(width / 0.3)):
 		for z in range(int(length / 0.3)):
-			for _ in range(3):
+			for blade_index in range(3):
 				var blade = MeshInstance3D.new()
 				blade.mesh = BoxMesh.new()
 				blade.mesh.size = Vector3(0.05, 0.3, 0.1)
