@@ -1360,13 +1360,25 @@ func _show_settings() -> void:
 
 func _enter_world() -> void:
 	menu_open = false
-	menu_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(menu_root, "modulate:a", 0.0, 0.65)
-	tween.tween_property(camera, "fov", 58.0, 0.8)
-	tween.set_parallel(false)
-	tween.tween_callback(_show_field_prompt)
+
+	# Robustez: el mundo no debe depender de que la referencia visual del menú
+	# siga viva. En algunas ejecuciones de Godot la referencia puede quedar nula
+	# después de recargar la escena.
+	if is_instance_valid(menu_root):
+		menu_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(menu_root, "modulate:a", 0.0, 0.65)
+		tween.tween_property(camera, "fov", 58.0, 0.8)
+		tween.set_parallel(false)
+		tween.tween_callback(_show_field_prompt)
+	else:
+		# El campo sigue siendo accesible aunque la capa de interfaz haya sido
+		# liberada. Evitamos un crash por referencia Nil.
+		if camera:
+			var tween := create_tween()
+			tween.tween_property(camera, "fov", 58.0, 0.8)
+		_show_field_prompt()
 
 func _show_field_prompt() -> void:
 	menu_open = false
