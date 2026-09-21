@@ -98,7 +98,17 @@ def mat(name, color, metallic=0.0, roughness=0.55, emission=None, emission_stren
     if not m:
         m = bpy.data.materials.new("SAVIA_" + name)
     m.use_nodes = True
-    bsdf = m.node_tree.nodes.get("Principled BSDF")
+    nodes = m.node_tree.nodes
+    bsdf = nodes.get("Principled BSDF")
+    if bsdf is None:
+        nodes.clear()
+        bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+        bsdf.location = (0, 0)
+        out = nodes.get("Material Output")
+        if out is None:
+            out = nodes.new("ShaderNodeOutputMaterial")
+            out.location = (420, 0)
+        m.node_tree.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
     bsdf.inputs["Base Color"].default_value = color
     bsdf.inputs["Metallic"].default_value = metallic
     bsdf.inputs["Roughness"].default_value = roughness
