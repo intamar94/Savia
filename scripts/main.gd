@@ -48,34 +48,34 @@ func _build_world() -> void:
     var env := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#163b2b")
+    environment.background_color = Color("#06130e")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#d8f0c2")
-    environment.ambient_light_energy = 1.35
+    environment.ambient_light_color = Color("#789b80")
+    environment.ambient_light_energy = 0.62
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.glow_enabled = true
-    environment.glow_intensity = 0.72
-    environment.glow_bloom = 0.16
+    environment.glow_intensity = 1.18
+    environment.glow_bloom = 0.28
     environment.fog_enabled = true
-    environment.fog_light_color = Color("#6fa878")
-    environment.fog_density = 0.0010
+    environment.fog_light_color = Color("#274d3b")
+    environment.fog_density = 0.0024
     environment.fog_sky_affect = 0.45
     env.environment = environment
     world_root.add_child(env)
 
     var moon := DirectionalLight3D.new()
     moon.rotation_degrees = Vector3(-42, -32, 0)
-    moon.light_energy = 2.15
-    moon.light_color = Color("#fff6d8")
+    moon.light_energy = 0.85
+    moon.light_color = Color("#b8d8c0")
     moon.shadow_enabled = true
     world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(5.4, 2.8, 10.8)
-    camera.fov = 43.0
+    camera.position = Vector3(5.2, 2.25, 10.8)
+    camera.fov = 44.0
     camera.current = true
     world_root.add_child(camera)
-    camera.look_at(Vector3(0.0, 1.9, -6.8), Vector3.UP)
+    camera.look_at(Vector3(0.0, -0.15, -6.8), Vector3.UP)
 
     _index_nature_assets()
     _create_ground()
@@ -83,16 +83,9 @@ func _build_world() -> void:
     _create_foreground_forest()
     _create_real_tree_grove()
     _create_central_tree()
+    _create_underground_cutaway()
     _create_fireflies()
-    _create_mushroom_cluster()
-    _create_fern_beds()
-    _create_flower_beds()
-    _create_mushroom_assets()
-    _create_insect_swarm()
-    _create_savia_hero()
-    _create_fruit_cluster()
     _create_root_showcase()
-    _create_leaf_particles()
     _create_bio_particles()
 
 func _index_nature_assets() -> void:
@@ -205,39 +198,31 @@ func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: fl
 
 
 func _create_ground() -> void:
-    # The ground is built around a shallow natural cutaway. The soil view is
-    # part of the same terrain, not a floating laboratory panel.
-    var strips := [
-        [Vector3(-10.5, -0.42, -11.0), Vector2(21.0, 28.0)],
-        [Vector3(16.5, -0.42, -11.0), Vector2(23.0, 28.0)],
-        [Vector3(3.0, -0.42, 2.0), Vector2(9.0, 10.0)],
-        [Vector3(3.0, -0.42, -21.0), Vector2(9.0, 18.0)]
-    ]
-    for data in strips:
-        var ground := MeshInstance3D.new()
-        var mesh := PlaneMesh.new()
-        mesh.size = data[1]
-        ground.mesh = mesh
-        ground.position = data[0]
-        ground.material_override = _mat(Color("#4f914d"), 0.98)
-        world_root.add_child(ground)
+    # Dark forest floor. The visible soil section is generated separately,
+    # so there are no bright geometric patches competing with the ecosystem.
+    var ground := MeshInstance3D.new()
+    var mesh := PlaneMesh.new()
+    mesh.size = Vector2(42.0, 34.0)
+    ground.mesh = mesh
+    ground.position = Vector3(0, -0.28, -9.0)
+    ground.material_override = _mat(Color("#17291f"), 1.0)
+    world_root.add_child(ground)
 
-    # Soft patches make the terrain read as a living forest floor.
-    var patch_data := [
-        [Vector3(-5.5, -0.39, -4.2), 1.8],
-        [Vector3(6.5, -0.39, -4.0), 1.5],
-        [Vector3(-8.0, -0.39, -9.0), 2.1],
-        [Vector3(9.0, -0.39, -10.5), 2.0]
-    ]
-    for data in patch_data:
+    # Organic moss patches, kept subtle and irregular.
+    for i in range(18):
         var patch := MeshInstance3D.new()
-        var patch_mesh := CylinderMesh.new()
-        patch_mesh.top_radius = data[1]
-        patch_mesh.bottom_radius = data[1] * 1.12
-        patch_mesh.height = 0.035
-        patch.mesh = patch_mesh
-        patch.position = data[0]
-        patch.material_override = _mat(Color("#3f7d42"), 0.98)
+        var pm := CylinderMesh.new()
+        var radius := 0.7 + float((i * 7) % 5) * 0.18
+        pm.top_radius = radius
+        pm.bottom_radius = radius * 1.15
+        pm.height = 0.025
+        patch.mesh = pm
+        patch.position = Vector3(
+            -14.0 + float((i * 19) % 28),
+            -0.255,
+            -3.5 - float((i * 13) % 25) * 0.52
+        )
+        patch.material_override = _mat(Color("#203d2b"), 1.0)
         world_root.add_child(patch)
 
 func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
@@ -337,23 +322,96 @@ func _create_real_tree_grove() -> void:
             tree.rotation.y = float(i) * 0.9
 
 func _create_central_tree() -> void:
-    # One large real tree becomes the visual anchor.
+    # The central tree is deliberately smaller: its trunk frames the root
+    # network instead of becoming an oversized isolated object.
     var trunk := _add_nature_asset(
         ["CommonTree_3.gltf", "CommonTree_4.gltf", "CommonTree_5.gltf", "DeadTree_3.gltf"],
-        Vector3(0.0, -0.05, -7.2), 2.55
+        Vector3(0.0, -0.04, -8.0), 1.55
     )
     if trunk:
         trunk.rotation.y = 0.12
-    for i in range(7):
+
+    # Moss ring physically joins the trunk to the forest floor.
+    for i in range(10):
         var mound := MeshInstance3D.new()
         var mm := CylinderMesh.new()
-        mm.top_radius = 0.9 + float(i % 3) * 0.25
-        mm.bottom_radius = mm.top_radius * 1.12
-        mm.height = 0.16
+        mm.top_radius = 0.55 + float(i % 4) * 0.18
+        mm.bottom_radius = mm.top_radius * 1.15
+        mm.height = 0.11
         mound.mesh = mm
-        mound.position = Vector3(-2.4 + i * 0.8, -0.31, -6.6 - float(i % 2) * 0.5)
-        mound.material_override = _mat(Color("#315d35"), 0.98)
+        mound.position = Vector3(
+            cos(i * 0.63) * (0.8 + float(i % 2) * 0.35),
+            -0.23,
+            -8.0 + sin(i * 0.63) * (0.8 + float(i % 2) * 0.35)
+        )
+        mound.material_override = _mat(Color("#284a31"), 0.98)
         world_root.add_child(mound)
+
+func _create_underground_cutaway() -> void:
+    # A real in-world soil cross-section: the upper edge is the forest floor,
+    # and the darker layers descend behind the luminous roots.
+    var cut := Node3D.new()
+    cut.name = "UndergroundEcology"
+    cut.position = Vector3(0.0, 0.0, -6.95)
+    world_root.add_child(cut)
+
+    var layers := [
+        [-0.22, 0.32, Color("#263b27")],
+        [-0.58, 0.48, Color("#3d2c24")],
+        [-1.12, 0.60, Color("#4b3327")],
+        [-1.78, 0.70, Color("#55402f")],
+        [-2.55, 0.82, Color("#3f3c38")],
+        [-3.35, 0.78, Color("#272c2b")]
+    ]
+    for data in layers:
+        var layer := MeshInstance3D.new()
+        var lm := BoxMesh.new()
+        lm.size = Vector3(11.5, data[1], 0.42)
+        layer.mesh = lm
+        layer.position = Vector3(0.0, data[0], 0.28)
+        layer.material_override = _mat(data[2], 0.98)
+        cut.add_child(layer)
+
+    # Thin organic top layer.
+    var humus := MeshInstance3D.new()
+    var hm := BoxMesh.new()
+    hm.size = Vector3(11.8, 0.13, 0.55)
+    humus.mesh = hm
+    humus.position = Vector3(0, -0.03, 0.20)
+    humus.material_override = _mat(Color("#1b2e20"), 1.0)
+    cut.add_child(humus)
+
+    # Small mineral veins give the lower horizons visual depth.
+    for i in range(13):
+        var vein := MeshInstance3D.new()
+        var vm := BoxMesh.new()
+        vm.size = Vector3(0.45 + float(i % 3) * 0.22, 0.035, 0.035)
+        vein.mesh = vm
+        vein.position = Vector3(
+            -5.2 + float((i * 17) % 100) * 0.10,
+            -0.75 - float((i * 11) % 25) * 0.10,
+            0.03
+        )
+        vein.rotation_degrees.z = -12 + float(i % 5) * 6
+        vein.material_override = _glow_mat(Color("#7d6848"), Color("#b99b5f"), 0.45, 0.78)
+        cut.add_child(vein)
+
+    # Horizon labels sit on the actual soil section.
+    var labels := [
+        ["HORIZON O", Vector3(-6.0, -0.25, -0.35)],
+        ["HORIZON A", Vector3(-6.0, -0.78, -0.35)],
+        ["HORIZON B", Vector3(-6.0, -1.55, -0.35)],
+        ["HORIZON C", Vector3(-6.0, -2.45, -0.35)]
+    ]
+    for item in labels:
+        var label := Label3D.new()
+        label.text = item[0]
+        label.position = item[1]
+        label.font_size = 26
+        label.modulate = Color("#86b59a")
+        label.outline_size = 8
+        label.outline_modulate = Color("#07120d")
+        cut.add_child(label)
 
 func _create_fireflies() -> void:
     for i in range(42):
@@ -618,37 +676,62 @@ func _add_glowing_segment(a: Vector3, b: Vector3, radius: float, color: Color) -
 
 
 func _create_root_showcase() -> void:
-    # No panel: the luminous network is physically attached to the central tree.
+    # Luminous roots connect the trunk, soil horizons and underground network.
     var paths := [
-        [Vector3(-0.15, 2.15, -6.55), Vector3(-0.85, 1.35, -6.35), Vector3(-1.90, 0.65, -6.10)],
-        [Vector3(0.10, 2.35, -6.55), Vector3(0.65, 1.55, -6.45), Vector3(1.80, 0.75, -6.20)],
-        [Vector3(-0.30, 1.65, -6.48), Vector3(-1.45, 0.75, -6.80), Vector3(-3.10, 0.25, -7.00)],
-        [Vector3(0.35, 1.55, -6.48), Vector3(1.55, 0.80, -6.75), Vector3(3.10, 0.25, -7.15)],
-        [Vector3(-0.65, 0.95, -6.35), Vector3(-1.05, 0.10, -6.00), Vector3(-1.55, -0.20, -5.65)],
-        [Vector3(0.55, 0.90, -6.35), Vector3(0.95, 0.05, -6.05), Vector3(1.65, -0.20, -5.75)]
+        [Vector3(-0.15, 0.15, -6.55), Vector3(-0.70, -0.10, -6.20), Vector3(-2.20, -0.48, -5.95)],
+        [Vector3(0.10, 0.18, -6.55), Vector3(0.65, -0.12, -6.20), Vector3(2.15, -0.55, -5.95)],
+        [Vector3(-0.25, 0.10, -6.50), Vector3(-1.25, -0.55, -6.00), Vector3(-3.25, -1.05, -5.95)],
+        [Vector3(0.30, 0.12, -6.50), Vector3(1.30, -0.55, -6.00), Vector3(3.30, -1.12, -5.95)],
+        [Vector3(-1.00, -0.20, -6.10), Vector3(-1.50, -1.10, -5.90), Vector3(-2.00, -2.10, -5.90)],
+        [Vector3(0.95, -0.20, -6.10), Vector3(1.55, -1.10, -5.90), Vector3(2.05, -2.25, -5.90)],
+        [Vector3(-0.70, -0.25, -6.20), Vector3(-0.10, -1.05, -5.90), Vector3(0.60, -2.40, -5.90)]
     ]
     for path in paths:
-        _add_glowing_segment(path[0], path[1], 0.07, Color("#a7e69a"))
-        _add_glowing_segment(path[1], path[2], 0.045, Color("#8edb9d"))
-    for i in range(30):
-        var a := Vector3(-2.7 + float((i * 13) % 54) * 0.10, 0.05 + float((i * 7) % 15) * 0.11, -7.05 + sin(i * 1.7) * 0.18)
-        var b := a + Vector3(sin(i * 2.1) * 0.45, 0.16 + float(i % 3) * 0.12, cos(i * 1.3) * 0.28)
-        _add_glowing_segment(a, b, 0.018, Color("#c4f5ad"))
-    for i in range(12):
+        _add_glowing_segment(path[0], path[1], 0.075, Color("#9eea9a"))
+        _add_glowing_segment(path[1], path[2], 0.042, Color("#83d7a1"))
+
+    # Fine root hairs form dense biological clusters in the deeper horizons.
+    for i in range(42):
+        var a := Vector3(
+            -3.2 + float((i * 17) % 64) * 0.10,
+            -0.45 - float((i * 13) % 26) * 0.105,
+            -5.55
+        )
+        var b := a + Vector3(
+            sin(i * 1.9) * (0.35 + float(i % 3) * 0.12),
+            -0.12 - float(i % 4) * 0.08,
+            -0.03
+        )
+        _add_glowing_segment(a, b, 0.014, Color("#baf3b0"))
+
+    # Symbiotic nodes: sparse, brighter, and concentrated where roots branch.
+    for i in range(18):
         var node := MeshInstance3D.new()
         var nm := SphereMesh.new()
-        nm.radius = 0.035 + float(i % 2) * 0.018
+        nm.radius = 0.028 + float(i % 3) * 0.014
         nm.height = nm.radius * 2.0
         node.mesh = nm
-        node.position = Vector3(-2.1 + float((i * 7) % 30) * 0.14, 0.12 + float((i * 5) % 11) * 0.12, -6.95 + sin(i * 1.9) * 0.22)
-        node.material_override = _glow_mat(Color("#d9ffb7"), Color("#e7ffc9"), 2.2, 0.92)
+        node.position = Vector3(
+            -2.7 + float((i * 11) % 50) * 0.11,
+            -0.35 - float((i * 7) % 23) * 0.10,
+            -5.50
+        )
+        node.material_override = _glow_mat(Color("#d8ffb9"), Color("#d9ffbd"), 2.6, 0.94)
         world_root.add_child(node)
+        root_nodes.append(node)
+
     var root_light := OmniLight3D.new()
-    root_light.position = Vector3(0, 1.35, -7.0)
-    root_light.light_color = Color("#b7f19b")
-    root_light.light_energy = 2.0
-    root_light.omni_range = 5.5
+    root_light.position = Vector3(0, -0.05, -6.0)
+    root_light.light_color = Color("#8fe9a4")
+    root_light.light_energy = 3.2
+    root_light.omni_range = 6.5
     world_root.add_child(root_light)
+
+    # A few upward tendrils visually connect the root system with the SAVIA title.
+    for i in range(7):
+        var a := Vector3(-2.2 + i * 0.7, 0.05, -6.65)
+        var b := a + Vector3(sin(i * 1.4) * 0.35, 0.55 + float(i % 3) * 0.25, 0.02)
+        _add_glowing_segment(a, b, 0.022, Color("#a7efad"))
 
 func _create_leaf_particles() -> void:
     for i in range(14):
@@ -676,9 +759,9 @@ func _glow_mat(color: Color, emission: Color, emission_energy: float, alpha: flo
 
 func _animate_world() -> void:
     if camera:
-        var target := Vector3(sin(time * 0.045) * 0.25, 1.75 + sin(time * 0.17) * 0.05, -6.9)
-        camera.position.x = 5.4 + sin(time * 0.035) * 0.45
-        camera.position.y = 2.8 + sin(time * 0.12) * 0.05
+        var target := Vector3(sin(time * 0.045) * 0.20, -0.10 + sin(time * 0.17) * 0.04, -6.75)
+        camera.position.x = 5.2 + sin(time * 0.035) * 0.35
+        camera.position.y = 2.25 + sin(time * 0.12) * 0.04
         camera.look_at(target, Vector3.UP)
 
     for i in range(fireflies.size()):
@@ -727,7 +810,7 @@ func _build_interface() -> void:
     add_child(menu_layer)
 
     var vignette := ColorRect.new()
-    vignette.color = Color(0.0, 0.015, 0.008, 0.20)
+    vignette.color = Color(0.0, 0.01, 0.006, 0.30)
     vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     menu_layer.add_child(vignette)
 
@@ -735,10 +818,9 @@ func _build_interface() -> void:
     menu_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     menu_layer.add_child(menu_root)
 
-    # Title is centered on the tree, as in the reference composition.
     var brand := VBoxContainer.new()
-    brand.position = Vector2(455, 38)
-    brand.custom_minimum_size = Vector2(360, 125)
+    brand.position = Vector2(470, 35)
+    brand.custom_minimum_size = Vector2(330, 130)
     brand.alignment = BoxContainer.ALIGNMENT_CENTER
     brand.add_theme_constant_override("separation", 0)
     menu_root.add_child(brand)
@@ -746,33 +828,33 @@ func _build_interface() -> void:
     var title := Label.new()
     title.text = "SAVIA"
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    title.add_theme_font_size_override("font_size", 64)
-    title.add_theme_color_override("font_color", Color("#edf4df"))
+    title.add_theme_font_size_override("font_size", 66)
+    title.add_theme_color_override("font_color", Color("#e9f4d8"))
     brand.add_child(title)
 
     var line := Label.new()
     line.text = "LA VIDA BAJO LA PIEL DEL BOSQUE"
     line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    line.add_theme_font_size_override("font_size", 12)
+    line.add_theme_font_size_override("font_size", 11)
     line.add_theme_color_override("font_color", ACCENT)
     brand.add_child(line)
 
-    # Menu stays on the right and remains transparent.
     var nav := VBoxContainer.new()
-    nav.position = Vector2(875, 235)
-    nav.custom_minimum_size = Vector2(330, 320)
-    nav.add_theme_constant_override("separation", 5)
+    nav.position = Vector2(860, 215)
+    nav.custom_minimum_size = Vector2(370, 370)
+    nav.add_theme_constant_override("separation", 4)
     menu_root.add_child(nav)
-    _add_main_action(nav, "INICIAR SIMBIOSIS", "comenzar una nueva investigación", _enter_world, true)
-    _add_main_action(nav, "CONTINUAR VIAJE", "volver a un ecosistema activo", _my_biomes, false)
-    _add_main_action(nav, "CATÁLOGO VIVO", "consultar lo que has descubierto", _atlas, false)
-    _add_main_action(nav, "EXPEDICIONES", "explorar otros biomas", _expeditions, false)
-    _add_main_action(nav, "AJUSTES ORGÁNICOS", "configurar percepción y accesibilidad", _show_settings, false)
+    _add_main_action(nav, "INICIAR SIMBIOSIS", "germinar una nueva relación con el bioma", _enter_world, true)
+    _add_main_action(nav, "CONTINUAR VIAJE", "retomar un ecosistema activo", _my_biomes, false)
+    _add_main_action(nav, "ENCICLOPEDIA DE HALLAZGOS", "consultar observaciones y descubrimientos", _atlas, false)
+    _add_main_action(nav, "RETOMAR RED SUBTERRÁNEA", "volver a la investigación del suelo", _expeditions, false)
+    _add_main_action(nav, "CALIBRACIÓN BIOLÓGICA", "ajustar la percepción simbiótica", _show_settings, false)
+    _add_main_action(nav, "DESCONECTAR DEL BIOMA", "salir de la investigación actual", _close_info, false)
 
     var nora := PanelContainer.new()
-    nora.position = Vector2(52, 640)
-    nora.size = Vector2(390, 65)
-    nora.add_theme_stylebox_override("panel", _box(Color(0.01, 0.035, 0.022, 0.28), 10, Color(0.55, 0.78, 0.48, 0.22), 1))
+    nora.position = Vector2(50, 640)
+    nora.size = Vector2(400, 68)
+    nora.add_theme_stylebox_override("panel", _box(Color(0.005, 0.02, 0.012, 0.35), 10, Color(0.45, 0.75, 0.50, 0.25), 1))
     menu_root.add_child(nora)
     var nb := VBoxContainer.new()
     nb.add_theme_constant_override("separation", 2)
@@ -790,14 +872,14 @@ func _build_interface() -> void:
 
     hint_label = Label.new()
     hint_label.text = "●  SIMBIOSIS ACTIVA"
-    hint_label.position = Vector2(54, 698)
+    hint_label.position = Vector2(52, 702)
     hint_label.add_theme_font_size_override("font_size", 10)
     hint_label.add_theme_color_override("font_color", ACCENT_2)
     menu_root.add_child(hint_label)
 
     info_panel = PanelContainer.new()
     info_panel.position = Vector2(770, 535)
-    info_panel.size = Vector2(420, 118)
+    info_panel.size = Vector2(430, 118)
     info_panel.visible = false
     info_panel.add_theme_stylebox_override("panel", _box(GLASS_LIGHT, 16, LINE, 1))
     menu_root.add_child(info_panel)
