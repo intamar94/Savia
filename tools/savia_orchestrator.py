@@ -9,6 +9,7 @@ Examples:
   python tools/savia_orchestrator.py status
   python tools/savia_orchestrator.py plan --operation scene.inspect
   python tools/savia_orchestrator.py blender scene.inspect
+  python tools/savia_orchestrator.py godot.validate
 """
 
 from __future__ import annotations
@@ -31,14 +32,14 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def run_command(args: list[str], cwd: Path = ROOT) -> tuple[int, str]:
+def run_command(args: list[str], cwd: Path = ROOT, timeout: int = 30) -> tuple[int, str]:
     try:
         result = subprocess.run(
             args,
             cwd=cwd,
             text=True,
             capture_output=True,
-            timeout=30,
+            timeout=timeout,
         )
         output = (result.stdout + result.stderr).strip()
         return result.returncode, output
@@ -148,6 +149,22 @@ def command_blender(args: argparse.Namespace) -> int:
     return 0 if response.get("ok", False) else 1
 
 
+def command_godot_validate(_: argparse.Namespace) -> int:
+    code, output = run_command(
+        [
+            "godot",
+            "--headless",
+            "--path",
+            str(ROOT),
+            "--script",
+            "res://tools/godot/validate_project.gd",
+        ],
+        timeout=60,
+    )
+    print(output)
+    return code
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="SAVIA deterministic orchestrator")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -162,6 +179,9 @@ def build_parser() -> argparse.ArgumentParser:
     blender = sub.add_parser("blender", help="Call the local Blender bridge")
     blender.add_argument("operation")
     blender.set_defaults(func=command_blender)
+
+    godot = sub.add_parser("godot.validate", help="Validate the Godot project headlessly")
+    godot.set_defaults(func=command_godot_validate)
 
     return parser
 
