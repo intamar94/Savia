@@ -538,21 +538,28 @@ bpy.ops.object.select_all(action='DESELECT')
 ROOT.select_set(True)
 bpy.context.view_layer.objects.active = ROOT
 
-# Save
-project_dir = os.path.dirname(bpy.data.filepath) if bpy.data.filepath else os.getcwd()
-out_dir = os.path.join(project_dir, "assets", "blender")
-os.makedirs(out_dir, exist_ok=True)
+# Save / export
+# IMPORTANT: derive the repository root from this script's own location.
+# Do not use bpy.data.filepath or cwd: after the first save, Blender's current
+# filepath becomes assets/blender/*.blend and a naive relative calculation
+# would create assets/blender/assets/blender/... on subsequent live rebuilds.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+OUT_DIR = os.path.join(REPO_ROOT, "assets", "blender")
+os.makedirs(OUT_DIR, exist_ok=True)
 
-blend_path = os.path.join(out_dir, ROOT_NAME + ".blend")
-glb_path = os.path.join(out_dir, ROOT_NAME + ".glb")
+blend_path = os.path.join(OUT_DIR, ROOT_NAME + ".blend")
+glb_path = os.path.join(OUT_DIR, ROOT_NAME + ".glb")
 
 if SAVE_BLEND:
+    print("[SAVIA] Saving BLEND:", blend_path)
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
 
 if EXPORT_GLB:
+    print("[SAVIA] Exporting GLB:", glb_path)
     bpy.ops.object.select_all(action='DESELECT')
     for obj in COL.objects:
-        if obj.type in {'MESH', 'CURVE', 'FONT', 'EMPTY'}:
+        if obj.type in {'MESH', 'CURVE', 'FONT'}:
             obj.select_set(True)
     bpy.context.view_layer.objects.active = ROOT
     bpy.ops.export_scene.gltf(
