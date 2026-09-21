@@ -55,28 +55,73 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Poly Haven metadata/installer marker.
-# Actual material selection is kept explicit so we do not silently download
-# large 8K files onto a phone. The project can request the required resolution.
+# Poly Haven — Single Root
+# Official public API, 1K glTF bundle. The API returns the model plus all
+# referenced dependencies, so the asset is installed as a complete scene.
+# Canonical asset: https://polyhaven.com/a/single_root
+# License: CC0. API access requires a clear Poly Haven attribution in products.
 # ---------------------------------------------------------------------------
-POLY_MARKER="$VENDOR/polyhaven/README.md"
-if [ ! -f "$POLY_MARKER" ]; then
-  cat > "$POLY_MARKER" <<'EOF'
-# SAVIA / Poly Haven
+POLY_DIR="$VENDOR/polyhaven/single_root"
 
-Canonical source: https://polyhaven.com/
-Forest Floor: https://polyhaven.com/a/forest_floor
-License: CC0
+if [ ! -f "$POLY_DIR/single_root_1k.gltf" ]; then
+  echo "[2/2] Installing Poly Haven Single Root (1K)..."
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 is required for the Poly Haven asset installer."
+    echo "Install it once in Termux with: pkg install python -y"
+    exit 1
+  fi
 
-SAVIA will use selected Poly Haven materials at an explicit resolution.
-Large 8K source files are not downloaded automatically to mobile devices.
-EOF
+  mkdir -p "$POLY_DIR"
+  SAVIA_POLY_DIR="$POLY_DIR" python3 - <<'PY'
+import json
+import os
+import pathlib
+import urllib.request
+
+asset_dir = pathlib.Path(os.environ["SAVIA_POLY_DIR"])
+api_url = "https://api.polyhaven.com/files/single_root"
+request = urllib.request.Request(
+    api_url,
+    headers={"User-Agent": "SAVIA-AssetInstaller/1.0"}
+)
+
+with urllib.request.urlopen(request, timeout=30) as response:
+    data = json.load(response)
+
+gltf = data.get("gltf", {})
+entry = gltf.get("1k") or gltf.get("2k") or next(iter(gltf.values()), None)
+if not entry or not entry.get("gltf", {}).get("url"):
+    raise SystemExit("Poly Haven API did not return a glTF bundle for single_root.")
+
+files = [(pathlib.Path("single_root_1k.gltf"), entry["gltf"]["url"])]
+for relative, dependency in entry["gltf"].get("include", {}).items():
+    files.append((pathlib.Path(relative), dependency["url"]))
+
+for relative_path, url in files:
+    target = asset_dir / relative_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    print(f"  downloading {relative_path}")
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "SAVIA-AssetInstaller/1.0"}
+    )
+    with urllib.request.urlopen(req, timeout=120) as response:
+        target.write_bytes(response.read())
+PY
+else
+  echo "[2/2] Poly Haven Single Root already installed."
 fi
 
-echo
-echo "Asset installation finished."
-echo "Installed model files: $(find "$QUAT_DIR" -type f \( -name "*.gltf" -o -name "*.glb" \) | wc -l)"
-echo "Installed texture files: $(find "$QUAT_DIR" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" \) | wc -l)"
-echo "Nature assets: $QUAT_DIR"
-echo
-echo "Next: open SAVIA in Godot and import the project assets."
+# Keep a provenance note inside the project without downloading heavy 8K maps.
+POLY_MARKER="$VENDOR/polyhaven/README.md"
+cat > "$POLY_MARKER" <<'EOF'
+# SAVIA / Poly Haven
+
+Single Root: https://polyhaven.com/a/single_root
+API: https://api.polyhaven.com/
+License: CC0
+
+The installer downloads the 1K glTF bundle and its referenced files automatically.
+Poly Haven requests clear attribution when the live public API is used in a product.
+EOF
+
