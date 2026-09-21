@@ -363,21 +363,21 @@ func _create_underground_cutaway() -> void:
     # The top edge meets the surface; the camera can see the living horizons.
     var cut := Node3D.new()
     cut.name = "LivingSoilSection"
-    cut.position = Vector3(0.0, -0.40, -4.15)
+    cut.position = Vector3(0.0, -0.40, -7.00)
     world_root.add_child(cut)
 
     var layers := [
         [-0.05, 0.22, Color("#29482b")],
-        [-0.36, 0.40, Color("#553827")],
-        [-0.84, 0.55, Color("#714932")],
-        [-1.48, 0.66, Color("#806044")],
+        [-0.36, 0.40, Color("#60402b")],
+        [-0.84, 0.55, Color("#795239")],
+        [-1.48, 0.66, Color("#80634b")],
         [-2.23, 0.76, Color("#665647")],
         [-3.08, 0.88, Color("#414643")]
     ]
     for data in layers:
         var layer := MeshInstance3D.new()
         var lm := BoxMesh.new()
-        lm.size = Vector3(14.0, data[1], 0.52)
+        lm.size = Vector3(12.5, data[1], 0.46)
         layer.mesh = lm
         layer.position = Vector3(0.0, data[0], 0.0)
         layer.material_override = _mat(data[2], 0.99)
@@ -416,10 +416,10 @@ func _create_underground_cutaway() -> void:
         cut.add_child(debris)
 
     var labels := [
-        ["O", Vector3(-6.45, -0.08, -0.37)],
-        ["A", Vector3(-6.45, -0.52, -0.37)],
-        ["B", Vector3(-6.45, -1.20, -0.37)],
-        ["C", Vector3(-6.45, -2.12, -0.37)]
+        ["O", Vector3(-6.45, -0.08, -0.28)],
+        ["A", Vector3(-6.45, -0.52, -0.28)],
+        ["B", Vector3(-6.45, -1.20, -0.28)],
+        ["C", Vector3(-6.45, -2.12, -0.28)]
     ]
     for item in labels:
         var label := Label3D.new()
@@ -433,7 +433,7 @@ func _create_underground_cutaway() -> void:
 
     var title := Label3D.new()
     title.text = "VIDA DEL SUELO"
-    title.position = Vector3(4.0, -0.02, -0.38)
+    title.position = Vector3(4.0, -0.02, -0.28)
     title.font_size = 20
     title.modulate = Color("#91cfa3")
     title.outline_size = 7
@@ -705,13 +705,13 @@ func _add_glowing_segment(a: Vector3, b: Vector3, radius: float, color: Color) -
 func _create_root_showcase() -> void:
     # Roots now cross the visible soil horizons instead of floating above them.
     var paths := [
-        [Vector3(-0.10, 0.05, -6.45), Vector3(-0.80, -0.35, -5.45), Vector3(-2.35, -0.65, -5.05)],
-        [Vector3(0.10, 0.06, -6.45), Vector3(0.80, -0.38, -5.45), Vector3(2.35, -0.72, -5.05)],
-        [Vector3(-0.25, 0.00, -6.40), Vector3(-1.35, -0.90, -5.35), Vector3(-3.25, -1.35, -5.05)],
-        [Vector3(0.30, 0.00, -6.40), Vector3(1.35, -0.92, -5.35), Vector3(3.25, -1.42, -5.05)],
-        [Vector3(-0.80, -0.25, -6.20), Vector3(-1.55, -1.45, -5.30), Vector3(-2.15, -2.35, -5.05)],
-        [Vector3(0.80, -0.25, -6.20), Vector3(1.55, -1.45, -5.30), Vector3(2.15, -2.45, -5.05)],
-        [Vector3(0.00, -0.15, -6.35), Vector3(-0.20, -1.25, -5.30), Vector3(0.35, -2.75, -5.05)]
+        [Vector3(-0.10, 0.05, -6.45), Vector3(-0.80, -0.35, -5.45), Vector3(-2.35, -0.65, -6.72)],
+        [Vector3(0.10, 0.06, -6.45), Vector3(0.80, -0.38, -5.45), Vector3(2.35, -0.72, -6.72)],
+        [Vector3(-0.25, 0.00, -6.40), Vector3(-1.35, -0.90, -5.35), Vector3(-3.25, -1.35, -6.72)],
+        [Vector3(0.30, 0.00, -6.40), Vector3(1.35, -0.92, -5.35), Vector3(3.25, -1.42, -6.72)],
+        [Vector3(-0.80, -0.25, -6.20), Vector3(-1.55, -1.45, -5.30), Vector3(-2.15, -2.35, -6.72)],
+        [Vector3(0.80, -0.25, -6.20), Vector3(1.55, -1.45, -5.30), Vector3(2.15, -2.45, -6.72)],
+        [Vector3(0.00, -0.15, -6.35), Vector3(-0.20, -1.25, -5.30), Vector3(0.35, -2.75, -6.72)]
     ]
     for path in paths:
         _add_glowing_segment(path[0], path[1], 0.075, Color("#9eea9a"))
@@ -739,7 +739,7 @@ func _create_root_showcase() -> void:
         node.position = Vector3(
             -3.0 + float((i * 11) % 57) * 0.105,
             -0.40 - float((i * 7) % 25) * 0.10,
-            -4.98
+            -6.69
         )
         node.material_override = _glow_mat(Color("#d8ffb9"), Color("#d9ffbd"), 2.4, 0.94)
         world_root.add_child(node)
@@ -748,8 +748,8 @@ func _create_root_showcase() -> void:
     var root_light := OmniLight3D.new()
     root_light.position = Vector3(0, -0.45, -5.45)
     root_light.light_color = Color("#75d99b")
-    root_light.light_energy = 2.8
-    root_light.omni_range = 5.8
+    root_light.light_energy = 3.4
+    root_light.omni_range = 6.5
     world_root.add_child(root_light)
 
 func _create_soil_life() -> void:
@@ -764,7 +764,7 @@ func _create_soil_life() -> void:
         worm.position = Vector3(
             -5.6 + float((i * 13) % 108) * 0.105,
             -0.45 - float((i * 7) % 18) * 0.11,
-            -4.30
+            -6.62
         )
         worm.rotation_degrees = Vector3(0, i * 29.0, 70.0 + sin(i) * 18.0)
         worm.material_override = _mat(Color("#87583f"), 0.88)
@@ -777,7 +777,7 @@ func _create_soil_life() -> void:
         sm.bottom_radius = 0.035
         sm.height = 0.16 + float(i % 3) * 0.05
         stem.mesh = sm
-        stem.position = Vector3(-4.7 + i * 0.90, -0.22, -4.20)
+        stem.position = Vector3(-4.7 + i * 0.90, -0.22, -6.58)
         stem.material_override = _mat(Color("#a99576"), 0.92)
         world_root.add_child(stem)
 
@@ -796,7 +796,7 @@ func _create_soil_life() -> void:
         var start := Vector3(
             -3.8 + float((i * 19) % 70) * 0.10,
             -0.58 - float((i * 11) % 24) * 0.10,
-            -4.18
+            -6.56
         )
         var end := start + Vector3(
             sin(i * 1.7) * (0.45 + float(i % 3) * 0.12),
@@ -818,7 +818,7 @@ func _create_soil_life() -> void:
             micro.position = Vector3(
                 cx + sin(j * 1.7 + c) * 0.24,
                 cy + cos(j * 1.2 + c) * 0.18,
-                -4.08
+                -6.46
             )
             micro.material_override = _glow_mat(
                 Color("#83dca4") if j % 3 else Color("#d7f6a5"),
@@ -835,7 +835,7 @@ func _create_soil_life() -> void:
         mm.radius = 0.025
         mm.height = 0.05
         micro.mesh = mm
-        micro.position = Vector3(-2.8 + i * 0.75, -1.25 - sin(i) * 0.35, -4.02)
+        micro.position = Vector3(-2.8 + i * 0.75, -1.25 - sin(i) * 0.35, -6.40)
         micro.material_override = _glow_mat(Color("#b5f0ff"), Color("#c8f7ff"), 2.0, 0.92)
         world_root.add_child(micro)
 
