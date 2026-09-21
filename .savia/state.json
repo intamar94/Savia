@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "project": "SAVIA",
+  "architecture_version": "0.1",
+  "active_feature": "menu_ecosystem",
+  "active_tools": ["blender", "godot", "git", "github"],
+  "optional_tools": ["ollama"],
+  "last_checkpoint": "main:76ec6c35e891bf4f2469e3918b7f978e669b9f61",
+  "safety": {
+    "destructive_operations_allowed": false,
+    "allow_arbitrary_code": false,
+    "require_clean_git_before_mutation": true
+  },
+  "targets": {
+    "godot_project": "project.godot",
+    "godot_main_scene": "main.tscn",
+    "godot_main_script": "scripts/main.gd",
+    "blender_assets": "assets/blender_exports"
+  }
+}
