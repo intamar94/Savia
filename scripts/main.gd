@@ -71,12 +71,12 @@ func _build_world() -> void:
     world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(5.0, 1.95, 10.5)
+    camera.position = Vector3(4.2, 2.25, 9.2)
     camera.fov = 46.0
     camera.current = true
     world_root.add_child(camera)
     # Frame the forest and the living root zone together.
-    camera.look_at(Vector3(0.0, -1.65, -5.4), Vector3.UP)
+    camera.look_at(Vector3(1.1, -0.15, -5.6), Vector3.UP)
 
     _index_nature_assets()
     _create_ground()
@@ -84,6 +84,7 @@ func _build_world() -> void:
     _create_foreground_forest()
     _create_real_tree_grove()
     _create_central_tree()
+    _create_menu_habitat()
     _create_living_soil_scene()
     _create_fireflies()
     _create_bio_particles()
@@ -210,7 +211,7 @@ func _create_ground() -> void:
         # Leave a wide central opening so the underground section is actually visible.
         [Vector3(-8.0, -0.38, -11.5), Vector2(4.0, 34.0)],
         [Vector3(8.0, -0.38, -11.5), Vector2(4.0, 34.0)],
-        [Vector3(0.0, -0.38, -17.0), Vector2(12.0, 10.0)]
+        [Vector3(0.0, -0.38, -17.0), Vector2(22.0, 18.0)]
     ]
     for data in strips:
         var ground := MeshInstance3D.new()
@@ -359,6 +360,73 @@ func _create_central_tree() -> void:
         )
         mound.material_override = _mat(Color("#284a31"), 0.98)
         world_root.add_child(mound)
+
+func _create_menu_habitat() -> void:
+    # The menu lives inside the biome. The right side is a real forest
+    # clearing with assets, not an empty color field behind the UI.
+    var clearing_positions := [
+        [Vector3(6.0, -0.02, -4.0), 0.62],
+        [Vector3(8.2, -0.02, -4.8), 0.78],
+        [Vector3(10.2, -0.02, -6.0), 0.58]
+    ]
+    for i in range(clearing_positions.size()):
+        var p: Vector3 = clearing_positions[i][0]
+        var sc: float = clearing_positions[i][1]
+        var rock := _add_nature_asset(
+            ["Rock_%d.gltf" % (i + 1), "Rock_%d.gltf" % (i + 2), "Pebble_%d.gltf" % (i + 1)],
+            p,
+            sc
+        )
+        if rock:
+            rock.rotation.y = float(i) * 1.2
+
+    # Dense low vegetation fills the foreground under the menu.
+    var low_positions := [
+        Vector3(5.4, -0.02, -3.2), Vector3(6.8, -0.02, -3.7),
+        Vector3(8.0, -0.02, -3.0), Vector3(9.3, -0.02, -4.1),
+        Vector3(10.7, -0.02, -4.0), Vector3(7.2, -0.02, -5.4),
+        Vector3(9.0, -0.02, -5.8), Vector3(11.3, -0.02, -6.5)
+    ]
+    for i in range(low_positions.size()):
+        var plant := _add_nature_asset(
+            ["Fern_1.gltf", "Flower_3_Group.gltf", "Flower_4_Group.gltf", "Grass_Common_Short.gltf"],
+            low_positions[i],
+            0.22 + float(i % 3) * 0.055
+        )
+        if plant:
+            plant.rotation.y = float(i) * 0.73
+
+    # A second real tree closes the empty right half and creates depth behind
+    # the menu. It is deliberately smaller than the central tree.
+    var anchor_tree := _add_nature_asset(
+        ["CommonTree_5.gltf", "CommonTree_4.gltf", "CommonTree_2.gltf", "DeadTree_2.gltf"],
+        Vector3(8.0, -0.02, -8.8),
+        1.10
+    )
+    if anchor_tree:
+        anchor_tree.rotation.y = -0.55
+
+    # Small bioluminescent observation zone: light follows the plants, not
+    # arbitrary floating geometry.
+    for i in range(6):
+        var marker := MeshInstance3D.new()
+        var mesh := SphereMesh.new()
+        mesh.radius = 0.025
+        mesh.height = 0.05
+        marker.mesh = mesh
+        marker.position = Vector3(5.5 + i * 1.05, 0.05, -2.8 - sin(i * 1.3) * 0.65)
+        marker.material_override = _glow_mat(Color("#7ac59a"), Color("#a6e7b0"), 0.55, 0.75)
+        world_root.add_child(marker)
+
+    # A subtle luminous "research path" anchors the menu to the terrain.
+    for i in range(7):
+        var stone := _add_nature_asset(
+            ["Pebble_%d.gltf" % ((i % 3) + 1), "Rock_%d.gltf" % ((i % 3) + 1)],
+            Vector3(4.7 + i * 0.85, -0.02, -1.9 - sin(i * 0.8) * 0.35),
+            0.16
+        )
+        if stone:
+            stone.rotation.y = i * 0.8
 
 func _create_living_soil_scene() -> void:
     # The soil is now represented by a real exposed-root asset rather than a
@@ -727,8 +795,8 @@ func _glow_mat(color: Color, emission: Color, emission_energy: float, alpha: flo
 
 func _animate_world() -> void:
     if camera:
-        var target := Vector3(sin(time * 0.045) * 0.20, -0.10 + sin(time * 0.17) * 0.04, -6.75)
-        camera.position.x = 5.2 + sin(time * 0.035) * 0.35
+        var target := Vector3(1.1 + sin(time * 0.045) * 0.20, -0.05 + sin(time * 0.17) * 0.04, -5.6)
+        camera.position.x = 4.2 + sin(time * 0.035) * 0.30
         camera.position.y = 2.25 + sin(time * 0.12) * 0.04
         camera.look_at(target, Vector3.UP)
 
