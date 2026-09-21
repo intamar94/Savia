@@ -48,18 +48,18 @@ func _build_world() -> void:
     var env := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#06130e")
+    environment.background_color = Color("#0a2117")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#789b80")
-    environment.ambient_light_energy = 0.62
+    environment.ambient_light_color = Color("#a8cda8")
+    environment.ambient_light_energy = 0.92
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.glow_enabled = true
     environment.glow_intensity = 1.18
     environment.glow_bloom = 0.28
     environment.fog_enabled = true
-    environment.fog_light_color = Color("#274d3b")
-    environment.fog_density = 0.0024
-    environment.fog_sky_affect = 0.45
+    environment.fog_light_color = Color("#4f8061")
+    environment.fog_density = 0.0015
+    environment.fog_sky_affect = 0.32
     env.environment = environment
     world_root.add_child(env)
 
@@ -71,11 +71,12 @@ func _build_world() -> void:
     world_root.add_child(moon)
 
     camera = Camera3D.new()
-    camera.position = Vector3(5.0, 1.75, 10.5)
-    camera.fov = 43.0
+    camera.position = Vector3(5.0, 1.95, 10.5)
+    camera.fov = 46.0
     camera.current = true
     world_root.add_child(camera)
-    camera.look_at(Vector3(0.0, -1.25, -5.2), Vector3.UP)
+    # Frame the forest and the underground cutaway together.
+    camera.look_at(Vector3(0.0, -1.65, -5.4), Vector3.UP)
 
     _index_nature_assets()
     _create_ground()
@@ -204,9 +205,10 @@ func _create_ground() -> void:
     # Ground is split around the central soil window. This prevents the flat
     # plane from hiding the underground ecosystem.
     var strips := [
-        [Vector3(-10.0, -0.38, -11.5), Vector2(20.0, 34.0)],
-        [Vector3(10.0, -0.38, -11.5), Vector2(20.0, 34.0)],
-        [Vector3(0.0, -0.38, -17.0), Vector2(20.0, 10.0)]
+        # Leave a wide central opening so the underground section is actually visible.
+        [Vector3(-8.0, -0.38, -11.5), Vector2(4.0, 34.0)],
+        [Vector3(8.0, -0.38, -11.5), Vector2(4.0, 34.0)],
+        [Vector3(0.0, -0.38, -17.0), Vector2(12.0, 10.0)]
     ]
     for data in strips:
         var ground := MeshInstance3D.new()
@@ -361,21 +363,21 @@ func _create_underground_cutaway() -> void:
     # The top edge meets the surface; the camera can see the living horizons.
     var cut := Node3D.new()
     cut.name = "LivingSoilSection"
-    cut.position = Vector3(0.0, -0.55, -4.65)
+    cut.position = Vector3(0.0, -0.40, -4.15)
     world_root.add_child(cut)
 
     var layers := [
-        [-0.05, 0.22, Color("#16261a")],
-        [-0.36, 0.40, Color("#33231d")],
-        [-0.84, 0.55, Color("#4a3026")],
-        [-1.48, 0.66, Color("#5b402e")],
-        [-2.23, 0.76, Color("#51443a")],
-        [-3.08, 0.88, Color("#303432")]
+        [-0.05, 0.22, Color("#29482b")],
+        [-0.36, 0.40, Color("#553827")],
+        [-0.84, 0.55, Color("#714932")],
+        [-1.48, 0.66, Color("#806044")],
+        [-2.23, 0.76, Color("#665647")],
+        [-3.08, 0.88, Color("#414643")]
     ]
     for data in layers:
         var layer := MeshInstance3D.new()
         var lm := BoxMesh.new()
-        lm.size = Vector3(14.0, data[1], 0.62)
+        lm.size = Vector3(14.0, data[1], 0.52)
         layer.mesh = lm
         layer.position = Vector3(0.0, data[0], 0.0)
         layer.material_override = _mat(data[2], 0.99)
