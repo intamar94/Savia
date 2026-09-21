@@ -90,12 +90,11 @@ func _build_world() -> void:
     _create_flower_beds()
     _create_mushroom_assets()
     _create_insect_swarm()
-    _create_wildlife()
-    _create_birds()
     _create_savia_hero()
-    _create_light_beam()
+    _create_fruit_cluster()
     _create_root_network()
     _create_leaf_particles()
+    _create_bio_particles()
 
 func _index_nature_assets() -> void:
     nature_asset_files.clear()
@@ -206,34 +205,35 @@ func _add_nature_asset(candidates: Array[String], pos: Vector3, scale_factor: fl
     return node
 
 func _create_ground() -> void:
+    # Keep the ground visually clean: the menu should communicate life,
+    # not look like a field of repeated rocks.
     var ground := MeshInstance3D.new()
     var mesh := PlaneMesh.new()
     mesh.size = Vector2(70, 70)
     ground.mesh = mesh
     ground.position = Vector3(0, -0.42, -10)
-    ground.material_override = _mat(Color("#243b28"), 0.9)
+    ground.material_override = _mat(Color("#203d2a"), 0.96)
     world_root.add_child(ground)
 
-    for i in range(18):
-        var rock_asset := _add_nature_asset(["Rock_1.gltf", "Rock_2.gltf", "Rock_Medium_2.gltf", "Pebble_1.gltf"], Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30)), 0.65 + float(i % 3) * 0.12)
-        if rock_asset:
-            continue
-        var rock := MeshInstance3D.new()
-        var sphere := SphereMesh.new()
-        sphere.radius = 0.25 + float(i % 4) * 0.12
-        sphere.height = sphere.radius * 1.35
-        rock.mesh = sphere
-        rock.position = Vector3(-18 + float((i * 11) % 36), -0.1, -3 - float((i * 17) % 30))
-        rock.scale = Vector3(1.5, 0.65, 1.0)
-        rock.material_override = _mat(Color("#405044"), 0.98)
-        world_root.add_child(rock)
+    # Organic patches add variation without competing with roots and plants.
+    for i in range(8):
+        var patch := MeshInstance3D.new()
+        var patch_mesh := CylinderMesh.new()
+        patch_mesh.top_radius = 0.45 + float(i % 3) * 0.12
+        patch_mesh.bottom_radius = patch_mesh.top_radius * 1.1
+        patch_mesh.height = 0.025
+        patch.mesh = patch_mesh
+        patch.position = Vector3(-12.0 + float((i * 7) % 24), -0.40, -3.0 - float((i * 11) % 22))
+        patch.material_override = _mat(Color("#315b38"), 0.98)
+        world_root.add_child(patch)
 
 func _create_soil_layers() -> void:
     # A stylized exposed soil profile keeps the scientific layers visible from
     # the menu: surface litter, O/A/B/C horizons and bedrock.
     var panel := Node3D.new()
     panel.name = "SoilProfile"
-    panel.position = Vector3(3.0, -0.65, -8.8)
+    # Raise the scientific cutaway so the horizons and roots are actually visible.
+    panel.position = Vector3(3.0, 1.65, -7.4)
     world_root.add_child(panel)
 
     var layers := [
@@ -247,7 +247,7 @@ func _create_soil_layers() -> void:
     for i in range(layers.size()):
         var layer := MeshInstance3D.new()
         var mesh := BoxMesh.new()
-        mesh.size = Vector3(7.2, layers[i][1], 0.38)
+        mesh.size = Vector3(5.4, layers[i][1], 0.32)
         layer.mesh = mesh
         layer.position = Vector3(0, y - layers[i][1] * 0.5, 0)
         layer.material_override = _mat(layers[i][2], 0.92)
@@ -257,7 +257,7 @@ func _create_soil_layers() -> void:
         var stripe_mesh := BoxMesh.new()
         stripe_mesh.size = Vector3(0.055, layers[i][1] * 0.8, 0.025)
         stripe.mesh = stripe_mesh
-        stripe.position = Vector3(-3.25, layer.position.y, -0.22)
+        stripe.position = Vector3(-2.45, layer.position.y, -0.22)
         stripe.material_override = _glow_mat(ACCENT if i < 2 else ACCENT_2, ACCENT, 0.45, 0.72)
         panel.add_child(stripe)
         y -= layers[i][1]
@@ -303,9 +303,9 @@ func _add_profile_root(parent: Node3D, a: Vector3, b: Vector3) -> void:
 func _create_water() -> void:
     var river := MeshInstance3D.new()
     var mesh := PlaneMesh.new()
-    mesh.size = Vector2(9, 70)
+    mesh.size = Vector2(4.2, 70)
     river.mesh = mesh
-    river.position = Vector3(5.3, -0.12, -11)
+    river.position = Vector3(6.8, -0.12, -11)
     river.rotation_degrees.y = -5
     river.material_override = _mat(Color("#1d6970"), 0.18)
     world_root.add_child(river)
@@ -325,13 +325,13 @@ func _create_water() -> void:
             reed.add_child(blade)
 
 func _create_distant_forest() -> void:
-    for i in range(34):
+    for i in range(20):
         var x := -20.0 + float((i * 13) % 40)
         var z := -18.0 - float((i * 7) % 25)
         _create_tree(Vector3(x, 0, z), 0.65 + float(i % 5) * 0.08, true)
 
 func _create_foreground_forest() -> void:
-    for i in range(15):
+    for i in range(9):
         var x := -17.0 + float((i * 19) % 32)
         var z := -1.0 - float((i * 29) % 23)
         if abs(x - 4.5) < 4.0:
@@ -502,7 +502,7 @@ func _create_mushroom_cluster() -> void:
         mush.add_child(cap)
 
 func _create_fern_beds() -> void:
-    for i in range(18):
+    for i in range(12):
         var real_plant := _add_nature_asset(["Fern_1.gltf", "Grass_Common_Short.gltf", "Bush_Common.gltf", "Plant_7.gltf"], Vector3(-16 + float((i * 9) % 27), 0, -2.0 - float((i * 11) % 22)), 0.32 + float(i % 3) * 0.08)
         if real_plant:
             continue
@@ -714,7 +714,8 @@ func _create_birds() -> void:
 func _create_savia_hero() -> void:
     # Hero plant: a real pack asset when available, with a subtle luminous
     # scientific treatment that visually connects leaf -> stem -> soil.
-    var hero := _add_nature_asset(["Plant_7.gltf", "Plant_6.gltf", "Fern_1.gltf", "Bush_Common.gltf"], Vector3(1.2, -0.05, -5.2), 1.55)
+    # Compact botanical hero: avoid the oversized flower silhouette.
+    var hero := _add_nature_asset(["Fern_1.gltf", "Plant_7.gltf", "Plant_6.gltf", "Bush_Common.gltf"], Vector3(0.8, -0.05, -5.2), 0.92)
     if not hero:
         var stem := MeshInstance3D.new()
         var stem_mesh := CylinderMesh.new()
@@ -742,6 +743,72 @@ func _create_savia_hero() -> void:
     plant_light.light_energy = 1.4
     plant_light.omni_range = 4.0
     world_root.add_child(plant_light)
+
+func _create_fruit_cluster() -> void:
+    # A readable fruiting stage connects flower -> fruit -> seed.
+    var spots := [
+        Vector3(0.42, 1.05, -5.30),
+        Vector3(1.12, 1.34, -5.22),
+        Vector3(0.30, 1.52, -5.10)
+    ]
+    for i in range(spots.size()):
+        var fruit := Node3D.new()
+        fruit.position = spots[i]
+        fruit.scale = Vector3.ONE * (0.14 + float(i % 2) * 0.025)
+        world_root.add_child(fruit)
+
+        var body := MeshInstance3D.new()
+        var body_mesh := SphereMesh.new()
+        body_mesh.radius = 0.9
+        body_mesh.height = 1.25
+        body.mesh = body_mesh
+        body.scale = Vector3(0.82, 1.0, 0.82)
+        body.material_override = _mat(Color("#c85a4b") if i != 1 else Color("#d89a45"), 0.72)
+        fruit.add_child(body)
+
+        var stem := MeshInstance3D.new()
+        var stem_mesh := CylinderMesh.new()
+        stem_mesh.top_radius = 0.025
+        stem_mesh.bottom_radius = 0.035
+        stem_mesh.height = 0.34
+        stem.mesh = stem_mesh
+        stem.position.y = 0.56
+        stem.rotation_degrees.z = -10
+        stem.material_override = _mat(Color("#4d7c3f"), 0.82)
+        fruit.add_child(stem)
+
+        var signal := MeshInstance3D.new()
+        var signal_mesh := SphereMesh.new()
+        signal_mesh.radius = 0.045
+        signal_mesh.height = 0.09
+        signal.mesh = signal_mesh
+        signal.position = Vector3(0, 0.02, 0.78)
+        signal.material_override = _glow_mat(Color("#ffbf65"), Color("#ffd68a"), 1.8, 0.8)
+        fruit.add_child(signal)
+        light_particles.append(signal)
+
+func _create_bio_particles() -> void:
+    # Pollen, spores, moisture and fluorescence-like observation points.
+    for i in range(46):
+        var particle := MeshInstance3D.new()
+        var mesh := SphereMesh.new()
+        mesh.radius = 0.012 + float(i % 4) * 0.006
+        mesh.height = mesh.radius * 2.0
+        particle.mesh = mesh
+        particle.position = Vector3(
+            -7.0 + float((i * 17) % 18) * 0.55,
+            0.45 + float((i * 11) % 22) * 0.11,
+            -3.5 - float((i * 7) % 22) * 0.52
+        )
+        var tone := i % 3
+        if tone == 0:
+            particle.material_override = _glow_mat(Color("#d8f58c"), Color("#e7ffab"), 2.2, 0.78)
+        elif tone == 1:
+            particle.material_override = _glow_mat(Color("#75d8b1"), Color("#8ff0c5"), 1.7, 0.72)
+        else:
+            particle.material_override = _glow_mat(Color("#b79cff"), Color("#c7b0ff"), 1.5, 0.68)
+        world_root.add_child(particle)
+        light_particles.append(particle)
 
 func _create_light_beam() -> void:
     # Soft light particles; the atmosphere-to-root path will later become a
@@ -824,9 +891,9 @@ func _glow_mat(color: Color, emission: Color, emission_energy: float, alpha: flo
 
 func _animate_world() -> void:
     if camera:
-        var target := Vector3(0.0 + sin(time * 0.045) * 1.4, 1.7 + sin(time * 0.17) * 0.08, -10.0)
-        camera.position.x = 8.2 + sin(time * 0.035) * 1.5
-        camera.position.y = 5.2 + sin(time * 0.12) * 0.1
+        var target := Vector3(0.2 + sin(time * 0.045) * 1.1, 1.45 + sin(time * 0.17) * 0.08, -7.8)
+        camera.position.x = 7.6 + sin(time * 0.035) * 1.2
+        camera.position.y = 4.7 + sin(time * 0.12) * 0.1
         camera.look_at(target, Vector3.UP)
 
     for i in range(fireflies.size()):
@@ -956,7 +1023,7 @@ func _build_interface() -> void:
     rail.add_theme_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
     rail.add_child(rail_title)
 
-    var levels := ["ATMÓSFERA", "HOJA", "PLANTA", "RAÍCES", "SUELO", "MICELIO", "MICRO VIDA"]
+    var levels := ["LUZ", "HOJA", "FLOR", "FRUTO", "RAÍCES", "SUELO", "MICELIO", "INSECTOS", "MICRO VIDA"]
     for i in range(levels.size()):
         var level := HBoxContainer.new()
         level.alignment = BoxContainer.ALIGNMENT_END
